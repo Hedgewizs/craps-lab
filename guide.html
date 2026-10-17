@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — Strategy Guide</title>
+<meta name="description" content="Bilingual craps strategy guides: dice math, pass & come, place bets, progressions, hedge systems, bonus bets, crapless. Honest edges, no hype.">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<script src="content-a.js"></script>
+<script src="content-b.js"></script>
+<script src="dealer-content.js"></script>
+<script>
+if (typeof DEALER_GUIDE !== "undefined") GUIDES.push(DEALER_GUIDE);
+Object.assign(I18N.en,{
+  guide_title:"Strategy Guide", guide_intro:"Ten chapters, one honest theme: every bet has a price, and the price is printed below. Read in order, or jump to what you play.",
+  glossary_h:"Glossary", glossary_d:"25 terms, EN + 繁中.",
+  mathbox_h:"The math", verdict_h:"The verdict",
+});
+Object.assign(I18N.zh,{
+  guide_title:"策略指南", guide_intro:"十個章節，一個誠實的主題：每種注都有價格，價格就印在下面。按順序讀，或直接跳到你玩的部分。",
+  glossary_h:"術語表", glossary_d:"25 個術語，中英對照。",
+  mathbox_h:"數學", verdict_h:"結論",
+});
+let guideTab = 'basics';
+function pickLang(o){ return (LANG==='zh'?o.zh:o.en) || o.en; }
+function renderGuide(){
+  const tabs = document.getElementById('gtabs');
+  const pane = document.getElementById('gpane');
+  tabs.innerHTML = GUIDES.map(g=>
+    `<button class="tab${g.id===guideTab?' active':''}" onclick="guideTab='${g.id}';renderGuide()">${g.icon} ${pickLang(g.title).split(':')[0]}</button>`
+  ).join('') + `<button class="tab${guideTab==='glossary'?' active':''}" onclick="guideTab='glossary';renderGuide()">📖 ${t('glossary_h')}</button>`;
+  if(guideTab==='glossary'){
+    pane.innerHTML = `<p class="muted">${t('glossary_d')}</p>
+      <table class="data"><tr><th>EN</th><th>繁中</th><th></th></tr>
+      ${GLOSSARY.map(g=>`<tr><td><b>${g.en}</b></td><td><b>${g.zh}</b></td><td>${pickLang(g.def)}</td></tr>`).join('')}
+      </table>`;
+    return;
+  }
+  const g = GUIDES.find(x=>x.id===guideTab);
+  pane.innerHTML = `
+    <h2 class="sec">${g.icon} ${pickLang(g.title)}</h2>
+    <p class="big">${pickLang(g.intro)}</p>
+    ${g.sections.map(s=>`<div class="card"><h3 style="color:var(--gold);margin-top:0">${pickLang(s.h)}</h3>${pickLang(s.body)}</div>`).join('')}
+    <div class="card"><h3 style="color:var(--gold);margin-top:0">🧮 ${t('mathbox_h')}</h3>${pickLang(g.mathBox)}</div>
+    <div class="callout"><b>✅ ${t('verdict_h')}:</b> ${pickLang(g.verdict)}</div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function onLangChange(){ renderGuide(); }
+</script>
+</head>
+<body>
+<script>document.write(navHTML('guide.html'));</script>
+<div class="wrap">
+  <section class="block">
+    <h1 style="color:var(--gold)" data-i18n="guide_title">Strategy Guide</h1>
+    <p data-i18n="guide_intro">Nine chapters...</p>
+    <script>document.write(adSlot());</script>
+    <div class="tabs" id="gtabs"></div>
+    <div id="gpane"></div>
+    <script>document.write(adSlot());</script>
+    <script>document.write(disclosure());</script>
+  </section>
+</div>
+<script>document.write(footerHTML());</script>
+<script>renderGuide();</script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — 30-Roll Challenge</title>
+<meta name="description" content="30 rolls. Win big or bust. Pick a strategy, ride 30 fixed rolls, and put your run on the leaderboard. Free, bilingual.">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<script src="craps-engine.js"></script>
+<script>
+Object.assign(I18N.en,{
+  ch_title:"🏆 30-Roll Challenge", ch_intro:"30 rolls. One bankroll. Win big or bust. Pick a strategy preset (or bet manually), ride the same 30 rolls, and see where your run lands on the leaderboard. Same dice for everyone — the strategy is the variable.",
+  ch_bank:"Starting bankroll", ch_start:"Start challenge",
+  ch_rolls_left:"rolls left", ch_score:"Final bankroll", ch_run:"Run the 30",
+  ch_name:"Your name", ch_save:"Save to leaderboard", ch_board:"Leaderboard",
+  ch_best:"Best runs (this device)", ch_empty:"No runs yet — be the first.",
+  ch_you:"You", ch_strategy:"Strategy",
+  ch_result_w:"🏆 New leaderboard entry!", ch_result:"Challenge complete",
+  ch_again:"Run it again",
+});
+Object.assign(I18N.zh,{
+  ch_title:"🏆 30 擲挑戰", ch_intro:"30 次擲骰。一筆賭本。要嘛大贏，要嘛歸零。選一個策略預設（或手動下注），走完同樣的 30 擲，看看你的成績在排行榜上排第幾。骰子對大家都一樣——變數是策略。",
+  ch_bank:"起始賭本", ch_start:"開始挑戰",
+  ch_rolls_left:"剩餘擲骰", ch_score:"最終賭本", ch_run:"跑完 30 擲",
+  ch_name:"你的名字", ch_save:"存入排行榜", ch_board:"排行榜",
+  ch_best:"最佳成績（本裝置）", ch_empty:"還沒有成績——來當第一個。",
+  ch_you:"你", ch_strategy:"策略",
+  ch_result_w:"🏆 新的排行榜紀錄！", ch_result:"挑戰完成",
+  ch_again:"再挑戰一次",
+});
+let chEng=null, chMem={}, chEquity=[], chPending=null;
+function board(){ try{ return JSON.parse(localStorage.getItem('crapslab_board')||'[]'); }catch(e){ return []; } }
+function saveBoard(b){ localStorage.setItem('crapslab_board', JSON.stringify(b.slice(0,20))); }
+function startChallenge(){
+  const strat=document.getElementById('ch_strat').value;
+  const bank=+document.getElementById('ch_bankv').value||300;
+  chEng=new CrapsEngine({bankroll:bank, tableMin:5, tableMax:10000, oddsMax:'345',
+    seed:(Math.random()*1e9)|0});
+  chEng.startBankroll=bank; chMem={}; chEquity=[bank];
+  document.getElementById('ch_play').style.display='block';
+  document.getElementById('ch_done').style.display='none';
+  document.getElementById('ch_rolls').innerHTML='';
+  renderCh();
+  log2('Challenge started: $'+bank+' · strategy: '+(strat==='manual'?'manual':sname(strat)));
+}
+function runThirty(){
+  const strat=document.getElementById('ch_strat').value;
+  for(let i=0;i<30;i++){
+    if(strat!=='manual'&&STRATEGIES[strat]){ try{STRATEGIES[strat].fn(chEng,chMem);}catch(e){} }
+    chEng.roll();
+    chEquity.push(chEng.bankroll);
+    if(chEng.bankroll<=0) break;
+  }
+  finishChallenge(strat);
+}
+function finishChallenge(strat){
+  const final=chEng.bankroll, pl=final-chEng.startBankroll;
+  const b=board();
+  const entry={name:'', score:Math.round(final), pl:Math.round(pl), strat:strat==='manual'?'manual':sname(strat), date:new Date().toISOString().slice(0,10)};
+  const qualifies = b.length<10 || final > b[b.length-1].score;
+  chPending = entry;
+  document.getElementById('ch_done').style.display='block';
+  document.getElementById('ch_play').style.display='none';
+  document.getElementById('ch_final').innerHTML=
+    `<div class="stat-grid"><div class="stat"><div class="v">$${Math.round(final)}</div><div class="l">${t('ch_score')}</div></div>
+     <div class="stat"><div class="v ${pl>=0?'pos':'neg'}">${pl>=0?'+':''}$${Math.round(pl)}</div><div class="l">P&L</div></div></div>
+     ${qualifies?`<p class="big">${t('ch_result_w')}</p>
+     <div class="rowflex"><label class="f">${t('ch_name')}<br><input type="text" id="ch_nm" maxlength="20" placeholder="Player 1"></label>
+     <button class="btn" onclick="saveRun()">${t('ch_save')}</button></div>`
+     :`<p>${t('ch_result')}</p>`}
+     <button class="btn ghost mt" onclick="startChallenge()">${t('ch_again')}</button>`;
+  drawCh();
+  renderBoard();
+}
+function saveRun(){
+  if(!chPending) return;
+  const nm=(document.getElementById('ch_nm')||{}).value||'Player';
+  chPending.name=nm;
+  const b=board(); b.push(chPending); b.sort((a,c)=>c.score-a.score);
+  saveBoard(b); renderBoard();
+  document.getElementById('ch_done').innerHTML='<p class="big pos">✅ '+chPending.name.replace(/</g,'&lt;')+' — $'+chPending.score+'</p><button class="btn ghost mt" onclick="startChallenge()">'+t('ch_again')+'</button>';
+  chPending=null;
+}
+function renderBoard(){
+  const b=board(); const el=document.getElementById('board');
+  if(!b.length){ el.innerHTML='<p class="muted">'+t('ch_empty')+'</p>'; return; }
+  el.innerHTML='<table class="data"><tr><th>#</th><th>'+t('ch_name')+'</th><th>'+t('ch_strategy')+'</th><th class="num">'+t('ch_score')+'</th><th class="num">P&L</th></tr>'+
+    b.map((e,i)=>`<tr><td>${i+1}</td><td>${e.name.replace(/</g,'&lt;')}</td><td>${e.strat}</td><td class="num">$${e.score}</td><td class="num ${e.pl>=0?'pos':'neg'}">${e.pl>=0?'+':''}$${e.pl}</td></tr>`).join('')+'</table>';
+}
+function renderCh(){
+  if(!chEng) return;
+  document.getElementById('ch_bank').innerHTML=`<div class="stat"><div class="v">$${Math.round(chEng.bankroll)}</div><div class="l">${t('bankroll_now')}</div></div>`;
+  document.getElementById('ch_dice').innerHTML=
+    `<div class="die">${dieSVG2(chEng.lastD1||1)}</div><div class="die">${dieSVG2(chEng.lastD2||1)}</div>`;
+  drawCh();
+}
+function dieSVG2(v){
+  const p={1:[50,50],2:[30,30,70,70],3:[30,30,50,50,70,70],4:[32,32,68,32,32,68,68,68],5:[32,32,68,32,50,50,32,68,68,68],6:[32,28,68,28,32,50,68,50,32,72,68,72]}[v];
+  let c=''; for(let i=0;i<p.length;i+=2) c+=`<circle cx="${p[i]}" cy="${p[i+1]}" r="9" fill="#1a1a1a"/>`;
+  return `<svg viewBox="0 0 100 100">${c}</svg>`;
+}
+function drawCh(){
+  const c=document.getElementById('ch_chart'); if(!c||chEquity.length<2) return;
+  const ctx=c.getContext('2d'); const W=c.width=c.offsetWidth*2, H=c.height=400;
+  ctx.clearRect(0,0,W,H);
+  const min=Math.min(...chEquity), max=Math.max(...chEquity), rg=(max-min)||1;
+  const X=i=>i/29*W, Y=v=>H-20-((v-min)/rg)*(H-40);
+  ctx.strokeStyle='#d4af37'; ctx.lineWidth=3; ctx.beginPath();
+  chEquity.forEach((v,i)=> i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(0),Y(v)));
+  ctx.stroke();
+}
+function log2(m){ const el=document.getElementById('ch_rolls'); el.innerHTML='<div>'+m+'</div>'+el.innerHTML; }
+function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
+function onLangChange(){
+  const s=document.getElementById('ch_strat');
+  s.innerHTML=`<option value="manual">${t('preset_manual')}</option>`+
+    Object.keys(STRATEGIES).map(k=>`<option value="${k}">${sname(k)}</option>`).join('');
+  renderBoard();
+}
+</script>
+</head>
+<body>
+<script>document.write(navHTML('challenge.html'));</script>
+<div class="wrap"><section class="block">
+<h1 style="color:var(--gold)" data-i18n="ch_title">🏆 30-Roll Challenge</h1>
+<p data-i18n="ch_intro"></p>
+<script>document.write(adSlot());</script>
+<div class="grid cols2">
+<div>
+  <div class="card"><h3 style="color:var(--gold);margin-top:0">⚙️ Setup</h3>
+    <div class="rowflex">
+      <label class="f"><span data-i18n="ch_strategy">Strategy</span><br><select id="ch_strat"></select></label>
+      <label class="f"><span data-i18n="ch_bank">Starting bankroll</span><br><input type="number" id="ch_bankv" value="300" style="width:120px"></label>
+    </div>
+    <div class="mt"><button class="btn" onclick="startChallenge()" data-i18n="ch_start">Start challenge</button></div>
+  </div>
+  <div class="card" id="ch_play" style="display:none">
+    <div class="stat-grid" id="ch_bank"></div>
+    <div class="dice" id="ch_dice"></div>
+    <div class="center"><button class="btn" style="font-size:1.2rem" onclick="runThirty()" data-i18n="ch_run">Run the 30</button></div>
+    <canvas class="chart" id="ch_chart" style="margin-top:12px"></canvas>
+    <div class="log" id="ch_rolls" style="margin-top:12px"></div>
+  </div>
+  <div class="card" id="ch_done" style="display:none"><div id="ch_final"></div></div>
+</div>
+<div>
+  <div class="card"><h3 style="color:var(--gold);margin-top:0">🏅 <span data-i18n="ch_board">Leaderboard</span></h3>
+    <p class="muted" data-i18n="ch_best">Best runs (this device)</p>
+    <div id="board"></div>
+  </div>
+</div>
+</div>
+<script>document.write(adSlot());</script>
+<script>document.write(disclosure());</script>
+</section></div>
+<script>document.write(footerHTML());</script>
+<script>onLangChange();renderBoard();</script>
+</body>
+</html>

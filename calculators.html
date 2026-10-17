@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — Calculators</title>
+<meta name="description" content="Bankroll vs goal odds calculator and cost-of-an-hour estimator. Real Monte Carlo math, bilingual.">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<script src="craps-engine.js"></script>
+<script>
+Object.assign(I18N.en,{
+  calc_title:"Calculators",
+  goal_h:"Bankroll vs Goal: What Are the Odds?",
+  goal_d:"“$500 bankroll, $10 3-Point Molly, +$200 goal — what are my odds?” Run 2,000 simulated sessions and get an honest answer: probability of hitting the goal, probability of busting, and the expected cost of trying.",
+  goal_run:"Calculate odds", goal_running:"Simulating…",
+  p_goal2:"Chance of hitting goal", p_bust2:"Chance of busting",
+  exp_cost:"Expected cost of trying", med2:"Median result",
+  hour_h:"Cost of an Hour",
+  hour_d:"How much does your game actually cost per hour? Enter your typical bets and the table speed — the calculator multiplies by the true edge of each bet.",
+  rolls_hr:"Rolls / hour", add_bet:"Add bet", hour_run:"Estimate",
+  bet_type:"Bet", amount:"Amount $", per_hour:"Decisions / hour",
+  hour_cost:"Expected hourly cost",
+  hour_note:"Assumes ~100 rolls/hour at a full table. One-roll bets resolve every roll; place bets average ~3 decisions/hour per number; line bets ~30 decisions/hour.",
+});
+Object.assign(I18N.zh,{
+  calc_title:"計算機",
+  goal_h:"賭本 vs 目標：勝算多少？",
+  goal_d:"「$500 賭本、$10 Three Point Molly、+$200 目標——勝算多少？」跑 2,000 次模擬 session，給你誠實的答案：達標機率、破產機率，以及嘗試的期望代價。",
+  goal_run:"計算勝算", goal_running:"模擬中…",
+  p_goal2:"達標機率", p_bust2:"破產機率",
+  exp_cost:"嘗試的期望代價", med2:"中位數結果",
+  hour_h:"每小時代價",
+  hour_d:"你的玩法每小時實際花多少？輸入常見注碼與桌速——計算機用每種注的真實優勢相乘。",
+  rolls_hr:"每小時擲骰", add_bet:"新增注碼", hour_run:"估算",
+  bet_type:"注種", amount:"金額 $", per_hour:"每小時結算",
+  hour_cost:"預期每小時花費",
+  hour_note:"滿桌約每小時 100 擲。單擲注每擲結算；置注每號碼每小時約 3 次結算；線注每小時約 30 次結算。",
+});
+const EDGE_MAP = {
+  pass:0.0141, dontpass:0.0136, come:0.0141,
+  place68:0.0152, place59:0.0400, place410:0.0667,
+  buy:0.0476, hard68:0.0909, hard410:0.1111,
+  field2x:0.0556, field3x:0.0278,
+  anyseven:0.1667, anycraps:0.1111, horn:0.125, hopEasy:0.1111, hopHard:0.1389,
+  ce:0.1111, big68:0.0909, ats:0.0776,
+};
+const DECISIONS_HR = {
+  pass:30, dontpass:30, come:30,
+  place68:3, place59:3, place410:3,
+  buy:3, hard68:2, hard410:2,
+  field2x:100, field3x:100,
+  anyseven:100, anycraps:100, horn:100, hopEasy:100, hopHard:100,
+  ce:100, big68:3, ats:8,
+};
+function runGoalCalc(){
+  const strat=document.getElementById('g_strat').value;
+  const bank=+document.getElementById('g_bank').value||500;
+  const goal=+document.getElementById('g_goal').value||200;
+  const btn=document.getElementById('g_btn');
+  btn.textContent=t('goal_running'); btn.disabled=true;
+  setTimeout(()=>{
+    const N=2000, res=[]; let hit=0, bust=0;
+    const seedBase=(Math.random()*1e9)|0;
+    for(let i=0;i<N;i++){
+      const eng=new CrapsEngine({seed:seedBase+i, bankroll:bank, tableMin:5, tableMax:10000,
+        oddsMax:document.getElementById('g_odds').value, crapless:document.getElementById('g_crapless').checked});
+      runSession(eng, STRATEGIES[strat], {winGoal:goal, maxRolls:600});
+      const pl=eng.bankroll-bank;
+      res.push(pl);
+      if(pl>=goal) hit++;
+      if(eng.bankroll<=0) bust++;
+    }
+    res.sort((a,b)=>a-b);
+    const mean=res.reduce((a,b)=>a+b,0)/N, med=res[Math.floor(N/2)];
+    document.getElementById('g_out').innerHTML=`
+      <div class="stat-grid">
+        <div class="stat"><div class="v">${(hit/N*100).toFixed(1)}%</div><div class="l">${t('p_goal2')}</div></div>
+        <div class="stat"><div class="v neg">${(bust/N*100).toFixed(1)}%</div><div class="l">${t('p_bust2')}</div></div>
+        <div class="stat"><div class="v neg">$${Math.abs(mean).toFixed(0)}</div><div class="l">${t('exp_cost')}</div></div>
+        <div class="stat"><div class="v ${med>=0?'pos':'neg'}">$${med.toFixed(0)}</div><div class="l">${t('med2')}</div></div>
+      </div>
+      <div class="callout">${goalVerdict(hit/N, bust/N, mean)}</div>`;
+    btn.textContent=t('goal_run'); btn.disabled=false;
+  },30);
+}
+function goalVerdict(pg, pb, mean){
+  if(LANG==='zh') return `2,000 次模擬：達標 ${(pg*100).toFixed(1)}%，破產 ${(pb*100).toFixed(1)}%，平均每次嘗試花費 $${Math.abs(mean).toFixed(0)}。就算達標率高，期望值永遠是負的——這就是「贏了會走人」和「長期玩」的差別。`;
+  return `Across 2,000 sessions: ${(pg*100).toFixed(1)}% hit the goal, ${(pb*100).toFixed(1)}% busted, average cost per attempt $${Math.abs(mean).toFixed(0)}. Even when the hit rate looks good, the expectation is always negative — that's the difference between “quit while ahead” and “play all night.”`;
+}
+let hourRows=0;
+function addHourRow(){
+  hourRows++;
+  const div=document.createElement('div');
+  div.className='rowflex'; div.id='hr'+hourRows;
+  div.innerHTML=`
+    <label class="f">${t('bet_type')}<br><select id="ht${hourRows}">
+      ${Object.keys(EDGE_MAP).map(k=>`<option value="${k}">${k}</option>`).join('')}
+    </select></label>
+    <label class="f">${t('amount')}<br><input type="number" id="ha${hourRows}" value="10" style="width:90px"></label>
+    <button class="btn small danger" onclick="document.getElementById('hr${hourRows}').remove()">✕</button>`;
+  document.getElementById('hour_rows').appendChild(div);
+}
+function runHour(){
+  let total=0; const rolls=+document.getElementById('h_rolls').value||100;
+  const scale=rolls/100;
+  const rows=document.getElementById('hour_rows').children;
+  let detail='';
+  for(const row of rows){
+    const sel=row.querySelector('select'), amt=row.querySelector('input[type=number]');
+    if(!sel||!amt) continue;
+    const k=sel.value, a=+amt.value||0;
+    const cost=a*EDGE_MAP[k]*DECISIONS_HR[k]*scale;
+    total+=cost;
+    detail+=`<div class="kv"><span>${k} $${a}</span><b class="neg">-$${cost.toFixed(2)}/hr</b></div>`;
+  }
+  document.getElementById('h_out').innerHTML=`
+    <div class="stat"><div class="v neg">$${total.toFixed(2)}</div><div class="l">${t('hour_cost')}</div></div>
+    <div class="mt">${detail}</div>
+    <p class="muted">${t('hour_note')}</p>`;
+}
+function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
+function onLangChange(){
+  const s=document.getElementById('g_strat');
+  s.innerHTML=Object.keys(STRATEGIES).map(k=>`<option value="${k}">${sname(k)}</option>`).join('');
+}
+</script>
+</head>
+<body>
+<script>document.write(navHTML('calculators.html'));</script>
+<div class="wrap"><section class="block">
+<h1 style="color:var(--gold)" data-i18n="calc_title">Calculators</h1>
+<script>document.write(adSlot());</script>
+<div class="card">
+  <h2 class="sec" data-i18n="goal_h">Bankroll vs Goal</h2>
+  <p data-i18n="goal_d"></p>
+  <div class="rowflex">
+    <label class="f">Strategy<br><select id="g_strat"></select></label>
+    <label class="f"><span data-i18n="bankroll">Bankroll</span><br><input type="number" id="g_bank" value="500" style="width:110px"></label>
+    <label class="f"><span data-i18n="win_goal">Win goal</span><br><input type="number" id="g_goal" value="200" style="width:110px"></label>
+    <label class="f"><span data-i18n="max_odds">Max odds</span><br><select id="g_odds">
+      <option value="345">3-4-5x</option><option value="10">10x</option><option value="100">100x</option>
+    </select></label>
+  </div>
+  <div class="checkrow"><input type="checkbox" id="g_crapless"><label for="g_crapless" data-i18n="crapless">Crapless table</label></div>
+  <div class="mt"><button class="btn" id="g_btn" onclick="runGoalCalc()" data-i18n="goal_run">Calculate odds</button></div>
+  <div id="g_out" class="mt"></div>
+</div>
+<div class="card">
+  <h2 class="sec" data-i18n="hour_h">Cost of an Hour</h2>
+  <p data-i18n="hour_d"></p>
+  <div class="rowflex"><label class="f"><span data-i18n="rolls_hr">Rolls / hour</span><br><input type="number" id="h_rolls" value="100" style="width:110px"></label>
+  <button class="btn small ghost" onclick="addHourRow()" data-i18n="add_bet">Add bet</button>
+  <button class="btn small" onclick="runHour()" data-i18n="hour_run">Estimate</button></div>
+  <div id="hour_rows" class="mt"></div>
+  <div id="h_out" class="mt"></div>
+</div>
+<script>document.write(adSlot());</script>
+<script>document.write(disclosure());</script>
+</section></div>
+<script>document.write(footerHTML());</script>
+<script>onLangChange();addHourRow();addHourRow();</script>
+</body>
+</html>

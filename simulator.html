@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — Full-Table Simulator</title>
+<meta name="description" content="Interactive craps simulator: every bet on a modern table including crapless, working/off toggles, strategy presets, bankroll chart. Free, bilingual.">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<script src="craps-engine.js"></script>
+<script>
+Object.assign(I18N.en,{
+  sim_title:"Full-Table Simulator", sim_intro:"Every bet on a modern layout — place them yourself or load a strategy preset, then roll. The dice are two independent d6; the math is the real math.",
+  preset:"Strategy preset", preset_manual:"Manual (I'll place bets)",
+  place_bets:"Place bets", active_bets:"Active bets", no_bets:"No bets up.",
+  working:"working", off:"OFF", take_down:"take down",
+  roll_history:"Roll history", stats:"Session stats",
+  decisions:"decisions", theo_loss:"theoretical loss", peak:"peak", trough:"trough",
+  new_session:"New session", auto_roll:"Auto roll", stop:"Stop",
+  point_on:"Point ON", shooter:"Shooter",
+  bet_placed:"bet placed", invalid:"Invalid",
+  goal_hit:"WIN GOAL HIT", ruined:"RUINED / STOP-LOSS",
+  last_roll:"Last roll", total:"Total",
+});
+Object.assign(I18N.zh,{
+  sim_title:"全桌模擬器", sim_intro:"現代賭桌上的每種注——自己下，或載入策略預設，然後擲骰。骰子是兩顆獨立 d6；數學就是真實數學。",
+  preset:"策略預設", preset_manual:"手動（我自己下注）",
+  place_bets:"下注", active_bets:"場上注碼", no_bets:"目前沒有注。",
+  working:"生效中", off:"關閉", take_down:"收回",
+  roll_history:"擲骰紀錄", stats:"Session 統計",
+  decisions:"次結算", theo_loss:"理論損失", peak:"最高", trough:"最低",
+  new_session:"新 session", auto_roll:"自動擲骰", stop:"停止",
+  point_on:"點數確立", shooter:"擲骰者",
+  bet_placed:"已下注", invalid:"無效",
+  goal_hit:"達到停利目標", ruined:"破產 / 觸及停損",
+  last_roll:"上次擲骰", total:"總和",
+});
+let eng=null, stratMem={}, autoTimer=null, equity=[];
+const PRESETS = ()=>Object.keys(STRATEGIES);
+function pickLang(o){ return (LANG==='zh'?o.zh:o.en)||o.en; }
+
+function newSession(){
+  const o = {
+    bankroll:+document.getElementById('s_bank').value||500,
+    winGoal:+document.getElementById('s_goal').value||0,
+    stopLoss:+document.getElementById('s_stop').value||0,
+    tableMin:+document.getElementById('s_min').value||5,
+    tableMax:+document.getElementById('s_max').value||1000,
+    oddsMax:document.getElementById('s_odds').value,
+    fieldPay:document.getElementById('s_field').value,
+    fieldTriple:+document.getElementById('s_triple').value||12,
+    buyVig:document.getElementById('s_vig').value,
+    crapless:document.getElementById('s_crapless').checked,
+    seed:(Math.random()*1e9)|0,
+  };
+  if(o.oddsMax==='345') o.oddsMax='345';
+  eng = new CrapsEngine(o);
+  eng.startBankroll = eng.bankroll;
+  stratMem = {};
+  equity = [eng.bankroll];
+  document.getElementById('log').innerHTML='';
+  document.getElementById('preset').value='manual';
+  stopAuto();
+  renderAll();
+  log('Session started: $'+eng.bankroll+' bankroll.');
+}
+function applyPreset(){
+  const id = document.getElementById('preset').value;
+  if(id==='manual'||!eng) return;
+  stratMem={};
+  log('Preset loaded: '+sname(id));
+  renderAll();
+}
+function doRoll(){
+  if(!eng) return;
+  const preset=document.getElementById('preset').value;
+  if(preset!=='manual' && STRATEGIES[preset]){
+    try{ STRATEGIES[preset].fn(eng,stratMem); }catch(e){ log('Preset: '+e.message); }
+  }
+  const ev = eng.roll();
+  const r = ev.find(e=>e.t==='roll');
+  equity.push(eng.bankroll);
+  if(equity.length>400) equity.shift();
+  renderAll(r);
+  const goal=+document.getElementById('s_goal').value||0;
+  const stop=+document.getElementById('s_stop').value||0;
+  if(goal>0 && eng.bankroll-eng.startBankroll>=goal){ log('🎯 '+t('goal_hit')); stopAuto(); }
+  if(eng.bankroll<=0 || (stop>0 && eng.startBankroll-eng.bankroll>=stop)){ log('🛑 '+t('ruined')); stopAuto(); }
+}
+function placeBetUI(type, params){
+  if(!eng) return;
+  try{
+    const b=eng.placeBet(type,params||{});
+    log('+ '+betName(b)+' $'+b.amount+' '+t('bet_placed'));
+  }catch(e){ log('⚠️ '+t('invalid')+': '+e.message); }
+  renderAll();
+}
+function betName(b){
+  const n=b.number?(' '+b.number):'';
+  return b.type+n;
+}
+function toggleWork(id){
+  const b=eng.bets.find(x=>x.id===id); if(!b) return;
+  b.working=!b.working; log(betName(b)+' → '+(b.working?t('working'):t('off')));
+  renderAll();
+}
+function takeDown(id){ if(eng){ eng.removeBet(id); renderAll(); } }
+function clearBets(){ if(eng){ eng.clearBets(); renderAll(); } }
+function newShooter(){ if(eng){ eng.newShooter(); log('🎲 '+t('new_shooter')); renderAll(); } }
+function toggleAuto(){
+  if(autoTimer){ stopAuto(); return; }
+  autoTimer=setInterval(doRoll, 350);
+  document.getElementById('autobtn').textContent=t('stop');
+}
+function stopAuto(){ if(autoTimer){clearInterval(autoTimer);autoTimer=null;} const b=document.getElementById('autobtn'); if(b) b.textContent=t('auto_roll'); }
+function log(m){ const el=document.getElementById('log'); el.innerHTML='<div>'+m+'</div>'+el.innerHTML; }
+function dieSVG(v){
+  const p={1:[50,50],2:[30,30,70,70],3:[30,30,50,50,70,70],4:[32,32,68,32,32,68,68,68],5:[32,32,68,32,50,50,32,68,68,68],6:[32,28,68,28,32,50,68,50,32,72,68,72]}[v];
+  let c=''; for(let i=0;i<p.length;i+=2) c+=`<circle cx="${p[i]}" cy="${p[i+1]}" r="9" fill="#1a1a1a"/>`;
+  return `<svg viewBox="0 0 100 100">${c}</svg>`;
+}
+function renderAll(lastRoll){
+  if(!eng) return;
+  // dice
+  document.getElementById('dice').innerHTML =
+    `<div class="die">${dieSVG(eng.lastD1||1)}</div><div class="die">${dieSVG(eng.lastD2||1)}</div>`;
+  document.getElementById('total').textContent = eng.lastTotal? (t('total')+': '+eng.lastTotal) : '';
+  // phase
+  const ph = eng.phase==='comeout' ? '⚫ '+t('comeout') : '🟡 '+t('point_on')+': '+eng.point;
+  document.getElementById('phase').innerHTML = ph+' &nbsp;·&nbsp; 🎲 '+t('shooter')+' #'+eng.shooters;
+  // bankroll
+  const pl = eng.bankroll-eng.startBankroll;
+  document.getElementById('bank').innerHTML =
+    `<div class="stat"><div class="v">$${eng.bankroll.toFixed(0)}</div><div class="l">${t('bankroll_now')}</div></div>
+     <div class="stat"><div class="v ${pl>=0?'pos':'neg'}">${pl>=0?'+':''}$${pl.toFixed(0)}</div><div class="l">P&amp;L</div></div>
+     <div class="stat"><div class="v">${eng.decisions}</div><div class="l">${t('decisions')}</div></div>
+     <div class="stat"><div class="v neg">-$${eng.theoretical.toFixed(0)}</div><div class="l">${t('theo_loss')}</div></div>`;
+  // bets
+  const bl=document.getElementById('betlist');
+  if(!eng.bets.length) bl.innerHTML='<p class="muted">'+t('no_bets')+'</p>';
+  else bl.innerHTML='<table class="data"><tr><th>Bet</th><th class="num">$</th><th></th><th></th></tr>'+
+    eng.bets.map(b=>`<tr><td>${betName(b)}${b.meta&&b.meta.traveling?' ✈️':''}</td><td class="num">${b.amount}</td>
+      <td>${['place','buy','hardway'].includes(b.type)?`<button class="btn small ghost" onclick="toggleWork(${b.id})">${b.working?t('working'):t('off')}</button>`:''}</td>
+      <td><button class="btn small ghost" onclick="takeDown(${b.id})">${t('take_down')}</button></td></tr>`).join('')+'</table>';
+  drawChart();
+}
+function drawChart(){
+  const c=document.getElementById('chart'); if(!c||equity.length<2) return;
+  const ctx=c.getContext('2d'); const W=c.width=c.offsetWidth*2, H=c.height=520;
+  ctx.clearRect(0,0,W,H);
+  const min=Math.min(...equity,eng.startBankroll), max=Math.max(...equity,eng.startBankroll);
+  const rg=(max-min)||1;
+  const X=i=>i/(equity.length-1)*W, Y=v=>H-20-((v-min)/rg)*(H-40);
+  ctx.strokeStyle='#d4af37'; ctx.lineWidth=3; ctx.beginPath();
+  equity.forEach((v,i)=> i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(0),Y(v)));
+  ctx.stroke();
+  ctx.strokeStyle='rgba(212,175,55,.35)'; ctx.setLineDash([8,8]); ctx.beginPath();
+  ctx.moveTo(0,Y(eng.startBankroll)); ctx.lineTo(W,Y(eng.startBankroll)); ctx.stroke(); ctx.setLineDash([]);
+}
+function buildBetButtons(){
+  const c=document.getElementById('betbtns');
+  const nums=[4,5,6,8,9,10];
+  const craplessNums=[2,3,4,5,6,8,9,10,11,12];
+  let h='<div class="card"><h3 style="color:var(--gold);margin-top:0">📥 '+t('place_bets')+'</h3>';
+  h+='<div class="rowflex" style="margin-bottom:10px"><label class="f">Line $ <input type="number" id="b_line" value="10" style="width:90px"></label>'+
+     '<button class="btn small" onclick="placeBetUI(\'pass\',{amount:+document.getElementById(\'b_line\').value})">Pass</button>'+
+     '<button class="btn small ghost" onclick="placeBetUI(\'dontpass\',{amount:+document.getElementById(\'b_line\').value})">Don\'t Pass</button></div>';
+  h+='<div class="rowflex" style="margin-bottom:10px"><label class="f">Come $ <input type="number" id="b_come" value="10" style="width:90px"></label>'+
+     '<button class="btn small" onclick="placeBetUI(\'come\',{amount:+document.getElementById(\'b_come\').value})">Come</button>'+
+     '<button class="btn small ghost" onclick="placeBetUI(\'dontcome\',{amount:+document.getElementById(\'b_come\').value})">Don\'t Come</button></div>';
+  h+='<div class="rowflex" style="margin-bottom:10px"><label class="f">Place $ <input type="number" id="b_place" value="12" style="width:90px"></label><select id="b_placen">'+
+     nums.map(n=>`<option>${n}</option>`).join('')+'</select>'+
+     '<button class="btn small" onclick="placeBetUI(\'place\',{amount:+document.getElementById(\'b_place\').value,number:+document.getElementById(\'b_placen\').value})">Place</button></div>';
+  h+='<div class="rowflex" style="margin-bottom:10px"><label class="f">Buy/Lay $ <input type="number" id="b_buy" value="20" style="width:90px"></label><select id="b_buyn">'+
+     [4,10].map(n=>`<option>${n}</option>`).join('')+'</select>'+
+     '<button class="btn small" onclick="placeBetUI(\'buy\',{amount:+document.getElementById(\'b_buy\').value,number:+document.getElementById(\'b_buyn\').value})">Buy</button>'+
+     '<button class="btn small ghost" onclick="placeBetUI(\'lay\',{amount:+document.getElementById(\'b_buy\').value,number:+document.getElementById(\'b_buyn\').value})">Lay</button></div>';
+  h+='<div class="rowflex" style="margin-bottom:10px"><label class="f">Hardway $ <input type="number" id="b_hard" value="5" style="width:90px"></label><select id="b_hardn">'+
+     [4,6,8,10].map(n=>`<option>${n}</option>`).join('')+'</select>'+
+     '<button class="btn small" onclick="placeBetUI(\'hardway\',{amount:+document.getElementById(\'b_hard\').value,number:+document.getElementById(\'b_hardn\').value})">Hardway</button></div>';
+  h+='<div class="rowflex" style="margin-bottom:10px"><label class="f">Prop $ <input type="number" id="b_prop" value="5" style="width:90px"></label>'+
+     '<button class="btn small" onclick="placeBetUI(\'anyseven\',{amount:+document.getElementById(\'b_prop\').value})">Any 7</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'anycraps\',{amount:+document.getElementById(\'b_prop\').value})">Any Craps</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'horn\',{amount:4*Math.max(1,Math.round(+document.getElementById(\'b_prop\').value/4))})">Horn</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'field\',{amount:+document.getElementById(\'b_prop\').value})">Field</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'ce\',{amount:2*Math.max(1,Math.round(+document.getElementById(\'b_prop\').value/2))})">C&amp;E</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'big68\',{amount:+document.getElementById(\'b_prop\').value,number:6})">Big 6</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'big68\',{amount:+document.getElementById(\'b_prop\').value,number:8})">Big 8</button></div>';
+  h+='<div class="rowflex"><label class="f">Bonus $ <input type="number" id="b_bonus" value="5" style="width:90px"></label>'+
+     '<button class="btn small" onclick="placeBetUI(\'ats\',{amount:+document.getElementById(\'b_bonus\').value,side:\'all\'})">ATS All</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'ats\',{amount:+document.getElementById(\'b_bonus\').value,side:\'tall\'})">ATS Tall</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'ats\',{amount:+document.getElementById(\'b_bonus\').value,side:\'small\'})">ATS Small</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'fire\',{amount:+document.getElementById(\'b_bonus\').value})">Fire</button>'+
+     '<button class="btn small" onclick="placeBetUI(\'repeater\',{amount:+document.getElementById(\'b_bonus\').value,number:6})">Repeater 6</button></div>';
+  h+='<div class="rowflex mt"><button class="btn small danger" onclick="clearBets()">'+t('clear_bets')+'</button>'+
+     '<button class="btn small ghost" onclick="newShooter()">'+t('new_shooter')+'</button></div>';
+  h+='</div>';
+  c.innerHTML=h;
+}
+function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
+function onLangChange(){ buildBetButtons(); buildPresets(); if(eng) renderAll(); }
+function buildPresets(){
+  const s=document.getElementById('preset');
+  s.innerHTML=`<option value="manual">${t('preset_manual')}</option>`+
+    Object.keys(STRATEGIES).map(k=>`<option value="${k}">${sname(k)}</option>`).join('');
+}
+</script>
+</head>
+<body>
+<script>document.write(navHTML('simulator.html'));</script>
+<div class="wrap">
+<section class="block">
+<h1 style="color:var(--gold)" data-i18n="sim_title">Full-Table Simulator</h1>
+<p data-i18n="sim_intro"></p>
+<script>document.write(adSlot());</script>
+<div class="grid cols2">
+<div>
+  <div class="card"><h3 style="color:var(--gold);margin-top:0">⚙️ Session</h3>
+    <div class="rowflex">
+      <label class="f"><span data-i18n="bankroll">Bankroll</span><br><input type="number" id="s_bank" value="500"></label>
+      <label class="f"><span data-i18n="win_goal">Win goal</span><br><input type="number" id="s_goal" value="200"></label>
+      <label class="f"><span data-i18n="stop_loss">Stop loss</span><br><input type="number" id="s_stop" value="500"></label>
+    </div>
+    <div class="rowflex">
+      <label class="f"><span data-i18n="table_min">Table min</span><br><input type="number" id="s_min" value="5"></label>
+      <label class="f"><span data-i18n="table_max">Table max</span><br><input type="number" id="s_max" value="1000"></label>
+      <label class="f"><span data-i18n="max_odds">Max odds</span><br><select id="s_odds">
+        <option value="345">3-4-5x</option><option value="10">10x</option><option value="100">100x</option>
+      </select></label>
+    </div>
+    <div class="rowflex">
+      <label class="f"><span data-i18n="field_pay">Field pay</span><br><select id="s_field">
+        <option value="2x">2x on 2 &amp; 12 (5.56%)</option><option value="3x">3x on 12 (2.78%)</option>
+      </select></label>
+      <label class="f">3x on<br><select id="s_triple"><option>12</option><option>2</option></select></label>
+      <label class="f"><span data-i18n="buy_vig">Buy vig</span><br><select id="s_vig">
+        <option value="upfront">Upfront 5%</option><option value="onwin">On win only</option>
+      </select></label>
+    </div>
+    <div class="checkrow"><input type="checkbox" id="s_crapless"><label for="s_crapless" data-i18n="crapless">Crapless table</label></div>
+    <div class="rowflex mt">
+      <button class="btn" onclick="newSession()" data-i18n="new_session">New session</button>
+    </div>
+    <div class="rowflex mt">
+      <label class="f" style="min-width:200px"><span data-i18n="preset">Strategy preset</span><br><select id="preset" onchange="applyPreset()"></select></label>
+    </div>
+  </div>
+  <div id="betbtns"></div>
+</div>
+<div>
+  <div class="card center">
+    <div id="phase" class="big" style="margin-bottom:6px"></div>
+    <div class="dice" id="dice"></div>
+    <div id="total" class="muted"></div>
+    <div class="mt"><button class="btn" style="font-size:1.3rem;padding:14px 44px" onclick="doRoll()" data-i18n="roll">Roll</button>
+    <button class="btn ghost" id="autobtn" onclick="toggleAuto()" data-i18n="auto_roll">Auto roll</button></div>
+    <div class="stat-grid" id="bank" style="margin-top:14px"></div>
+  </div>
+  <div class="card"><h3 style="color:var(--gold);margin-top:0">📊 <span data-i18n="stats">Session stats</span></h3>
+    <canvas class="chart" id="chart"></canvas>
+  </div>
+  <div class="card"><h3 style="color:var(--gold);margin-top:0">🎯 <span data-i18n="active_bets">Active bets</span></h3><div id="betlist"></div></div>
+  <div class="card"><h3 style="color:var(--gold);margin-top:0">📝 <span data-i18n="roll_history">Roll history</span></h3><div class="log" id="log"></div></div>
+</div>
+</div>
+<script>document.write(adSlot());</script>
+<script>document.write(disclosure());</script>
+</section>
+</div>
+<script>document.write(footerHTML());</script>
+<script>buildBetButtons();buildPresets();newSession();</script>
+</body>
+</html>

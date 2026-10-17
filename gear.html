@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — Gear & Merch</title>
+<meta name="description" content="Practice gear I actually recommend: precision dice, craps felt layouts, honest gambling-math books. Plus Craps Lab merch (coming soon).">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<script>
+/* ---------- Amazon Associates ---------- */
+const AMAZON_TAG = "hedwiz00-20";
+const amz = q => "https://www.amazon.com/s?k="+encodeURIComponent(q)+"&tag="+AMAZON_TAG;
+const GEAR = [
+  {icon:"🎲", q:"precision casino dice set",
+   name:{en:"Precision casino dice", zh:"精密賭場骰子"},
+   d:{en:"Real casino dice are machined to 1/10,000th of an inch with sharp edges — the only fair way to practice rolls at home. Avoid rounded-corner 'poker dice'.",
+      zh:"真正的賭場骰子精密切割到萬分之一英吋、邊角銳利——在家練習擲骰唯一公平的選擇。別買圓角的撲克骰子。"}},
+  {icon:"🟢", q:"craps table felt layout",
+   name:{en:"Craps table felt layout", zh:"花旗骰桌布"},
+   d:{en:"A full-size felt with the real betting layout. Learn where every bet lives before your first live table — the Practice trainer pairs perfectly with one.",
+      zh:"印有真實下注區的全尺寸桌布。上真桌之前先搞懂每個注的位置——配本站的練習教練效果加倍。"}},
+  {icon:"📦", q:"leather dice tray",
+   name:{en:"Dice tray", zh:"骰盅托盤"},
+   d:{en:"Keeps practice rolls on the table and off the floor. Any tray works — felt-lined is quieter.",
+      zh:"讓練習擲骰乖乖待在桌上不掉地板。任何托盤都行——絨面內裡比較安靜。"}},
+  {icon:"📖", q:"Gambling 102 Michael Shackleford",
+   name:{en:"Gambling 102 — Michael Shackleford", zh:"《Gambling 102》— Michael Shackleford"},
+   d:{en:"Written by the Wizard of Odds. The rare gambling book with honest math and no 'secret system' nonsense. If you read one book, read this one.",
+      zh:"Wizard of Odds 親筆。少見的誠實數學賭博書，沒有「秘密必勝法」那套。只讀一本的話，讀這本。"}},
+  {icon:"📖", q:"Fortune's Formula William Poundstone",
+   name:{en:"Fortune's Formula — William Poundstone", zh:"《Fortune's Formula》— William Poundstone"},
+   d:{en:"The story of the Kelly criterion — the math behind bet sizing, bankroll management, and why 'press it all' is usually wrong. Reads like a thriller.",
+      zh:"凱利公式的故事——注碼大小、資金管理的數學，以及為什麼「全押加注」通常是錯的。讀起來像驚悚小說。"}},
+  {icon:"📖", q:"Theory of Gambling and Statistical Logic Epstein",
+   name:{en:"The Theory of Gambling and Statistical Logic — Richard Epstein", zh:"《賭博理論與統計邏輯》— Richard Epstein"},
+   d:{en:"The textbook. Probability theory built entirely around casino games. Dense, but it's the real foundation under everything on this site.",
+      zh:"教科書級。以賭場遊戲為骨架的機率論。硬，但本站所有內容的真正地基都在這裡。"}},
+];
+/* ---------- Printify merch (designs come later) ----------
+   Fill MERCH_PRODUCTS when designs are ready. Format per item:
+   {name:{en:"Craps Lab Tee", zh:"Craps Lab T 恤"}, price:"$24.99",
+    img:"https://…/design.jpg", url:"https://hedgewiz.printify.me/product/…"} */
+const MERCH_PRODUCTS = [];
+
+Object.assign(I18N.en,{
+  gear_title:"Gear & Merch",
+  gear_intro:"The practice gear I actually recommend, and Craps Lab merch when it lands. No casino or sportsbook affiliates here — licensing risk I don't need, and you shouldn't trust a 'strategy site' paid by the house anyway.",
+  gear_h:"Practice gear",
+  gear_d:"Hand-picked. Every item below is something I'd tell a friend to buy — dice you can trust, felt to learn the layout, books with honest math.",
+  gear_cta:"Check price on Amazon",
+  amz_disc:"As an Amazon Associate, Craps Lab earns from qualifying purchases. Prices change — the link always shows the live price.",
+  merch_h:"Craps Lab merch",
+  merch_d:"Branded tees and felt swag, printed on demand. Designs are in the works — check back soon.",
+  merch_soon:"Designs coming soon",
+  merch_notify:"Want first dibs? The announcement will go out with the next site update.",
+});
+Object.assign(I18N.zh,{
+  gear_title:"裝備與周邊",
+  gear_intro:"我真心推薦的練習裝備，以及即將推出的 Craps Lab 周邊。這裡沒有賭場或博彩公司聯盟行銷——牌照風險我不需要，而你也不該相信拿賭場錢的「策略網站」。",
+  gear_h:"練習裝備",
+  gear_d:"精挑細選。下面每樣都是我會推薦朋友買的——信得過的骰子、學版面的桌布、數學誠實的書。",
+  gear_cta:"去 Amazon 看價格",
+  amz_disc:"身為 Amazon 合作夥伴，Craps Lab 從合格購買中賺取佣金。價格會變動——連結永遠顯示即時價格。",
+  merch_h:"Craps Lab 周邊",
+  merch_d:"品牌 T 恤與桌布小物，按需印製。設計製作中——敬請期待。",
+  merch_soon:"設計即將推出",
+  merch_notify:"想搶先入手？會在下次網站更新時一併公告。",
+});
+function pick(o){ return (LANG==='zh'?o.zh:o.en)||o.en; }
+function renderGear(){
+  document.getElementById('geargrid').innerHTML = GEAR.map(g=>`
+    <div class="card"><div style="font-size:2.2rem">${g.icon}</div>
+      <h3 style="color:var(--gold);margin:8px 0">${pick(g.name)}</h3>
+      <p class="muted">${pick(g.d)}</p>
+      <a class="btn small" href="${amz(g.q)}" target="_blank" rel="nofollow sponsored noopener">${t('gear_cta')} →</a>
+    </div>`).join('');
+  const m = document.getElementById('merchgrid');
+  if(!MERCH_PRODUCTS.length){
+    m.innerHTML = [1,2,3].map(()=>`
+      <div class="card" style="border-style:dashed;text-align:center;opacity:.75">
+        <div style="font-size:2.2rem">👕</div>
+        <h3 style="color:var(--gold)">${t('merch_soon')}</h3>
+        <p class="muted">${t('merch_notify')}</p>
+      </div>`).join('');
+  } else {
+    m.innerHTML = MERCH_PRODUCTS.map(p=>`
+      <div class="card"><img src="${p.img}" alt="" style="width:100%;border-radius:8px">
+        <h3 style="color:var(--gold);margin:8px 0">${pick(p.name)}</h3>
+        <div class="kv"><span>Price</span><b>${p.price}</b></div>
+        <a class="btn small" href="${p.url}" target="_blank" rel="noopener">Buy →</a>
+      </div>`).join('');
+  }
+}
+function onLangChange(){ renderGear(); }
+</script>
+<style>
+.merch-note{font-size:.82rem;color:var(--cream-dim);border:1px dashed var(--line);border-radius:8px;padding:10px 14px;margin:10px 0}
+</style>
+</head>
+<body>
+<script>document.write(navHTML('gear.html'));</script>
+<div class="wrap"><section class="block">
+<h1 style="color:var(--gold)" data-i18n="gear_title">Gear & Merch</h1>
+<p data-i18n="gear_intro"></p>
+<script>document.write(adSlot());</script>
+
+<h2 class="sec">🛒 <span data-i18n="gear_h">Practice gear</span></h2>
+<p class="muted" data-i18n="gear_d"></p>
+<div class="grid cols3" id="geargrid"></div>
+<p class="ad-note" data-i18n="amz_disc"></p>
+
+<h2 class="sec mt">👕 <span data-i18n="merch_h">Craps Lab merch</span></h2>
+<p class="muted" data-i18n="merch_d"></p>
+<div class="grid cols3" id="merchgrid"></div>
+
+<script>document.write(adSlot());</script>
+<script>document.write(disclosure());</script>
+</section></div>
+<script>document.write(footerHTML());</script>
+<script>renderGear();</script>
+</body>
+</html>

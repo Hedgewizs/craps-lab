@@ -1,0 +1,108 @@
+/* Craps Lab — casino felt theme, mobile-first */
+:root{
+  --felt:#0b3d2e; --felt-dark:#07271e; --felt-light:#11573f;
+  --gold:#d4af37; --gold-dim:#a8872c;
+  --cream:#f5f0e1; --cream-dim:#cfc9b4;
+  --red:#e05252; --green:#4caf7d; --blue:#5aa9e6;
+  --card:#0e2f24; --line:#1d5c46;
+  --radius:12px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--felt-dark); color:var(--cream);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang TC","Microsoft JhengHei",sans-serif;
+  line-height:1.6;
+}
+a{color:var(--gold)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+/* ---------- header / nav ---------- */
+header.site{position:sticky;top:0;z-index:50;background:rgba(7,39,30,.96);border-bottom:2px solid var(--gold-dim);backdrop-filter:blur(4px)}
+.nav{display:flex;align-items:center;gap:8px;padding:10px 16px;max-width:1080px;margin:0 auto;flex-wrap:wrap}
+.brand{font-weight:800;font-size:1.25rem;color:var(--gold);text-decoration:none;margin-right:auto;white-space:nowrap}
+.brand small{color:var(--cream-dim);font-weight:400;font-size:.8rem}
+.nav a.nl{color:var(--cream);text-decoration:none;padding:6px 10px;border-radius:8px;font-size:.92rem;white-space:nowrap}
+.nav a.nl:hover,.nav a.nl.active{background:var(--felt-light);color:var(--gold)}
+.langbtn{background:transparent;border:1px solid var(--gold-dim);color:var(--gold);border-radius:999px;padding:6px 14px;font-size:.85rem;cursor:pointer;white-space:nowrap}
+.langbtn:hover{background:var(--gold);color:#1a1a1a}
+/* ---------- hero ---------- */
+.hero{background:radial-gradient(ellipse at 50% 0%,var(--felt-light),var(--felt-dark) 75%);text-align:center;padding:56px 16px 40px;border-bottom:1px solid var(--line)}
+.hero h1{margin:0 0 8px;font-size:2.4rem;color:var(--gold);letter-spacing:.5px}
+.hero p.sub{color:var(--cream-dim);max-width:640px;margin:0 auto 20px;font-size:1.05rem}
+.btn{display:inline-block;background:var(--gold);color:#1a1a1a;font-weight:700;border:none;border-radius:10px;padding:12px 26px;font-size:1rem;cursor:pointer;text-decoration:none;margin:4px}
+.btn:hover{background:#e8c34a}
+.btn.ghost{background:transparent;color:var(--gold);border:2px solid var(--gold-dim)}
+.btn.ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn.danger{background:var(--red);color:#fff}
+.btn.small{padding:8px 16px;font-size:.9rem}
+/* ---------- dice ---------- */
+.dice{display:inline-flex;gap:10px;justify-content:center;margin:12px 0}
+.die{width:64px;height:64px;border-radius:12px;background:var(--cream);color:#1a1a1a;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.die svg{width:48px;height:48px}
+/* ---------- cards / sections ---------- */
+section.block{padding:32px 0}
+h2.sec{color:var(--gold);border-bottom:2px solid var(--line);padding-bottom:8px;margin-top:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:14px 0}
+.grid{display:grid;gap:14px}
+@media(min-width:720px){.grid.cols2{grid-template-columns:1fr 1fr}.grid.cols3{grid-template-columns:1fr 1fr 1fr}}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+.kv:last-child{border-bottom:none}
+.kv b{color:var(--gold)}
+.pos{color:var(--green)} .neg{color:var(--red)}
+.pill{display:inline-block;background:var(--felt-light);border:1px solid var(--gold-dim);color:var(--gold);border-radius:999px;padding:2px 12px;font-size:.8rem;margin:2px}
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0}
+.tab{background:var(--card);border:1px solid var(--line);color:var(--cream);border-radius:10px;padding:10px 16px;cursor:pointer;font-size:.95rem}
+.tab:hover{border-color:var(--gold)}
+.tab.active{background:var(--gold);color:#1a1a1a;font-weight:700;border-color:var(--gold)}
+.tabpane{display:none}
+.tabpane.active{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+/* ---------- tables ---------- */
+table.data{width:100%;border-collapse:collapse;font-size:.92rem;margin:12px 0}
+table.data th,table.data td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
+table.data th{color:var(--gold);font-weight:700;background:rgba(212,175,55,.06)}
+table.data tr:hover td{background:rgba(212,175,55,.04)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+/* ---------- forms ---------- */
+label.f{display:block;margin:10px 0 4px;color:var(--cream-dim);font-size:.9rem}
+input[type=text],input[type=number],select{background:#0a3529;border:1px solid var(--line);color:var(--cream);border-radius:8px;padding:10px 12px;font-size:1rem;width:100%;max-width:320px}
+input:focus,select:focus{outline:2px solid var(--gold-dim)}
+.rowflex{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.checkrow{display:flex;align-items:center;gap:8px;margin:8px 0}
+.checkrow input{width:auto;accent-color:var(--gold)}
+/* ---------- craps layout (simplified) ---------- */
+.layout{background:#0d5c3f;border:3px solid #6b4f1d;border-radius:18px;padding:14px;position:relative;min-height:420px;margin:16px 0;user-select:none}
+.lz{position:absolute;border:1px dashed rgba(212,175,55,.55);border-radius:8px;color:var(--cream);font-size:.72rem;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;padding:4px;background:rgba(0,0,0,.15)}
+.lz:hover{background:rgba(212,175,55,.25)}
+.lz .chip{position:absolute;top:-9px;right:-6px;background:var(--gold);color:#1a1a1a;font-size:.62rem;font-weight:700;border-radius:999px;padding:1px 7px}
+.lz.off{opacity:.45;border-style:solid}
+.lz.off::after{content:"OFF";position:absolute;bottom:2px;font-size:.6rem;color:var(--red);font-weight:700}
+/* ---------- log / chart ---------- */
+.log{background:#04150f;border:1px solid var(--line);border-radius:8px;padding:12px;height:180px;overflow-y:auto;font-family:ui-monospace,monospace;font-size:.82rem}
+.log div{padding:2px 0;border-bottom:1px dotted #123}
+canvas.chart{width:100%;height:260px;background:#04150f;border:1px solid var(--line);border-radius:8px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0}
+.stat{background:#04150f;border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
+.stat .v{font-size:1.5rem;font-weight:800;color:var(--gold)}
+.stat .l{font-size:.78rem;color:var(--cream-dim)}
+.bar{height:10px;background:#123;border-radius:5px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--gold)}
+/* ---------- ad slots ---------- */
+.ad-slot{margin:22px auto;max-width:728px;min-height:90px;border:1px dashed #4a5a52;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#6b7a72;font-size:.75rem;letter-spacing:2px;background:rgba(255,255,255,.02)}
+.ad-note{font-size:.78rem;color:#8a968f;text-align:center;max-width:640px;margin:0 auto 8px}
+/* ---------- misc ---------- */
+footer.site{border-top:2px solid var(--gold-dim);margin-top:40px;padding:24px 16px;text-align:center;color:var(--cream-dim);font-size:.85rem}
+.disclosure{background:rgba(224,82,82,.08);border:1px solid rgba(224,82,82,.35);border-radius:10px;padding:14px 18px;font-size:.88rem;margin:18px 0}
+.callout{background:rgba(212,175,55,.08);border-left:4px solid var(--gold);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:10px 0}
+summary{cursor:pointer;font-weight:700;color:var(--gold)}
+.quiz-opt{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);color:var(--cream);border-radius:10px;padding:12px;margin:8px 0;cursor:pointer;font-size:1rem}
+.quiz-opt:hover{border-color:var(--gold)}
+.quiz-opt.right{border-color:var(--green);background:rgba(76,175,125,.12)}
+.quiz-opt.wrong{border-color:var(--red);background:rgba(224,82,82,.12)}
+.big{font-size:1.15rem}
+.center{text-align:center}
+.muted{color:var(--cream-dim)}
+.mt{margin-top:18px}
+@media(max-width:560px){.hero h1{font-size:1.8rem}.die{width:52px;height:52px}.die svg{width:38px;height:38px}}

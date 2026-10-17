@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — The Honest Craps Simulator & Strategy Guide</title>
+<meta name="description" content="Free craps simulator with every bet on the table, 100,000-session batch testing, strategy guides, and payout practice. No real money.">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<!-- AdSense: paste verification/auto-ads script here -->
+</head>
+<body>
+<script>document.write(navHTML('index.html'));</script>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="dice" id="heroDice"></div>
+    <h1>🎲 Craps Lab</h1>
+    <p class="sub" data-i18n="hero_tag"></p>
+    <p class="sub" data-i18n="hero_sub" style="font-size:.95rem"></p>
+    <a class="btn" href="simulator.html" data-i18n="cta_sim"></a>
+    <a class="btn ghost" href="guide.html" data-i18n="cta_guide"></a>
+  </div>
+</div>
+
+<div class="wrap">
+  <script>document.write(adSlot());</script>
+
+  <section class="block">
+    <div class="grid cols2">
+      <div class="card">
+        <h3>🎰 <span data-i18n="feat_sim_t"></span></h3>
+        <p data-i18n="feat_sim_d"></p>
+        <a class="btn small" href="simulator.html" data-i18n="cta_sim"></a>
+      </div>
+      <div class="card">
+        <h3>📊 <span data-i18n="feat_batch_t"></span></h3>
+        <p data-i18n="feat_batch_d"></p>
+        <a class="btn small" href="batch.html">Batch Lab →</a>
+      </div>
+      <div class="card">
+        <h3>🔥 <span data-i18n="feat_chal_t"></span></h3>
+        <p data-i18n="feat_chal_d"></p>
+        <a class="btn small" href="challenge.html">Challenge →</a>
+      </div>
+      <div class="card">
+        <h3>🎯 <span data-i18n="feat_prac_t"></span></h3>
+        <p data-i18n="feat_prac_d"></p>
+        <a class="btn small" href="practice.html">Practice →</a>
+      </div>
+      <div class="card">
+        <h3>🧮 <span data-i18n="nav_calc"></span></h3>
+        <p>Bankroll-vs-goal odds and cost-of-an-hour, computed with real Monte Carlo math.</p>
+        <a class="btn small" href="calculators.html">Calculators →</a>
+      </div>
+      <div class="card">
+        <h3>🛒 <span data-i18n="nav_gear"></span></h3>
+        <p data-i18n="feat_gear_d"></p>
+        <a class="btn small" href="gear.html">Gear →</a>
+      </div>
+    </div>
+  </section>
+
+  <script>document.write(disclosure());</script>
+  <script>document.write(adSlot());</script>
+</div>
+
+<script>document.write(footerHTML());</script>
+<script>
+// hero dice animation
+function dieSVG(v){
+  const p={1:[50,50],2:[30,30,70,70],3:[30,30,50,50,70,70],4:[30,30,70,30,30,70,70,70],5:[30,30,70,30,50,50,30,70,70,70],6:[30,30,70,30,30,50,70,50,30,70,70,70]}[v];
+  let c='';for(let i=0;i<p.length;i+=2)c+=`<circle cx="${p[i]}" cy="${p[i+1]}" r="8" fill="#1a1a1a"/>`;
+  return `<svg viewBox="0 0 100 100">${c}</svg>`;
+}
+const hd=document.getElementById('heroDice');
+function heroRoll(){const a=1+Math.floor(Math.random()*6),b=1+Math.floor(Math.random()*6);
+  hd.innerHTML=`<div class="die">${dieSVG(a)}</div><div class="die">${dieSVG(b)}</div>`;}
+heroRoll();setInterval(heroRoll,1600);
+</script>
+</body>
+</html>

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — Practice Trainer</title>
+<meta name="description" content="Payout quizzes with dealer mental-math shortcuts, a click-to-place felt trainer, dealer phrase scripts, and a beginner mistakes checklist. Free, bilingual EN/繁中.">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<script src="content-a.js"></script>
+<script src="content-b.js"></script>
+<script src="dealer-content.js"></script>
+<script>
+/* Practice-page chrome strings (merged into the global I18N bank) */
+Object.assign(I18N.en,{
+  prac_title:"Practice Trainer",
+  prac_intro:"Three drills that build real table skills: instant payout math, knowing exactly where every bet lives on the felt, and speaking the dealer's language.",
+  quiz_h:"Payout Quiz",
+  quiz_d:"Ten random questions per round. Every answer comes with the dealer's mental-math shortcut — learn the trick, not just the number.",
+  quiz_start:"Start quiz", quiz_score:"Score", quiz_next:"Next →", quiz_results:"See results →",
+  quiz_done_h:"Round complete!", quiz_again:"Play again", quiz_best:"Best round",
+  drills_h:"Dealer Drills", drills_d:"Ten dealer-speed payout scenarios. Say the payout out loud, then flip the card — that's how dealers learn.", drills_reveal:"Reveal answer",
+  trainer_h:"Click-to-Place Layout Trainer",
+  trainer_d:"The prompt names a bet and an amount — tap its exact spot on the felt. Build a streak. Turn the labels off when you're ready for a real test.",
+  trainer_tap:"Tap where a {amt} {bet} bet goes",
+  trainer_streak:"Streak", trainer_best:"Best", trainer_hits:"Placed",
+  trainer_clear:"Clear felt", trainer_labels:"Show labels",
+  dealer_h:"What to Say to the Dealer",
+  dealer_d:"Dealers place most bets for you — say it right and your chips land in the right spot, fast.",
+  dealer_when:"When to say it", dealer_means:"What happens",
+  mis_h:"Beginner Mistakes Checklist",
+  mis_d:"Check each one off as you learn to avoid it. Your progress is saved on this device.",
+  mis_reset:"Reset checklist", mis_progress:"mastered"
+});
+Object.assign(I18N.zh,{
+  prac_title:"練習教練",
+  prac_intro:"三種訓練，練出真功夫：即時賠付心算、每個注在桌上的確切位置、以及跟荷官溝通的語言。",
+  quiz_h:"賠付測驗",
+  quiz_d:"每輪十題隨機測驗。每題都附荷官心算捷徑——學會技巧，不只背數字。",
+  quiz_start:"開始測驗", quiz_score:"得分", quiz_next:"下一題 →", quiz_results:"看結果 →",
+  quiz_done_h:"本輪結束！", quiz_again:"再玩一次", quiz_best:"最佳成績",
+  drills_h:"荷官特訓", drills_d:"十個荷官速度的賠付情境。大聲說出賠付金額再翻牌——荷官就是這樣練的。", drills_reveal:"翻開答案",
+  trainer_h:"下注版點擊練習",
+  trainer_d:"題目會說出注名與金額——點一下它在桌上的確切位置。累積連對；準備好接受真正考驗時就把標籤關掉。",
+  trainer_tap:"點一下 {amt} {bet} 該放的位置",
+  trainer_streak:"連對", trainer_best:"最佳", trainer_hits:"已放置",
+  trainer_clear:"清除桌面", trainer_labels:"顯示標籤",
+  dealer_h:"跟荷官這樣說",
+  dealer_d:"多數注由荷官幫你放——說得對，籌碼又快又準到位。",
+  dealer_when:"什麼時候說", dealer_means:"會發生什麼事",
+  mis_h:"新手錯誤檢查清單",
+  mis_d:"學會避開每一項就打勾。進度存在這台裝置上。",
+  mis_reset:"重設清單", mis_progress:"已掌握"
+});
+</script>
+<style>
+.lz.badflash{border-color:var(--red)!important;background:rgba(224,82,82,.45)!important;animation:shake .3s}
+.lz.goodflash{border-color:var(--green)!important;background:rgba(76,175,125,.35)!important}
+@keyframes shake{25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+#felt.hidelab .zlab{display:none}
+.hud{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.prompt{font-size:1.2rem;margin:6px 0 4px}
+.say{font-size:1.3rem;color:var(--gold);font-weight:800;margin-bottom:8px}
+.layout{min-height:440px}
+</style>
+<!-- AdSense: paste verification/auto-ads script here -->
+</head>
+<body>
+<script>document.write(navHTML('practice.html'));</script>
+
+<div class="wrap">
+  <section class="block" style="padding-bottom:0">
+    <h1 style="color:var(--gold);margin-bottom:4px">🎯 <span data-i18n="prac_title"></span></h1>
+    <p class="muted" data-i18n="prac_intro"></p>
+  </section>
+
+  <script>document.write(adSlot());</script>
+
+  <section class="block">
+    <h2 class="sec">🧮 <span data-i18n="quiz_h"></span></h2>
+    <p class="muted" data-i18n="quiz_d"></p>
+    <div id="quizBox"></div>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">🎩 <span data-i18n="drills_h"></span></h2>
+    <p class="muted" data-i18n="drills_d"></p>
+    <div id="drillsBox"></div>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">👆 <span data-i18n="trainer_h"></span></h2>
+    <p class="muted" data-i18n="trainer_d"></p>
+    <div class="card">
+      <div class="prompt" id="tprompt"></div>
+      <div class="hud">
+        <span class="pill" id="tstreak"></span>
+        <span class="pill" id="tbest"></span>
+        <span class="pill" id="thits"></span>
+        <button class="btn small ghost" id="tclearbtn" onclick="clearFelt()"></button>
+        <label class="checkrow" style="margin:0 0 0 auto"><input type="checkbox" id="labtoggle" onchange="toggleLabels(this)"><span id="labt"></span></label>
+      </div>
+      <div class="layout" id="felt"></div>
+    </div>
+  </section>
+
+  <script>document.write(disclosure());</script>
+
+  <section class="block">
+    <h2 class="sec">🗣️ <span data-i18n="dealer_h"></span></h2>
+    <p class="muted" data-i18n="dealer_d"></p>
+    <div class="grid cols2" id="phrasesBox"></div>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">✅ <span data-i18n="mis_h"></span></h2>
+    <p class="muted" data-i18n="mis_d"></p>
+    <div id="misBox"></div>
+  </section>
+
+  <script>document.write(adSlot());</script>
+</div>
+
+<script>
+/* ================= Practice Trainer logic ================= */
+/* Defensive data: use content.js banks when present, else built-in fallbacks */
+var FALLBACK_QUIZ = [
+ {q:{en:"The Pass Line pays…",zh:"過關線（Pass Line）的賠率是……"},
+  choices:[{en:"1 to 1",zh:"1 賠 1"},{en:"2 to 1",zh:"2 賠 1"},{en:"7 to 6",zh:"7 賠 6"},{en:"6 to 5",zh:"6 賠 5"}],
+  answer:0,
+  explain:{en:"Pass Line is an even-money bet: a $10 winner gets the $10 stake back plus $10 profit.",zh:"過關線是等額賠付：$10 的注贏了，拿回 $10 本金再加 $10 獲利。"},
+  tip:{en:"Dealer shortcut: even-money just means 'hand back an identical stack.'",zh:"荷官心算：等額賠付就是把同樣一疊籌碼再交給你。"}},
+ {q:{en:"$12 on Place 6 wins. Your profit is…",zh:"$12 的置注 6（Place 6）贏了，獲利是……"},
+  choices:[{en:"$12",zh:"$12"},{en:"$14",zh:"$14"},{en:"$18",zh:"$18"},{en:"$10",zh:"$10"}],
+  answer:1,
+  explain:{en:"Place 6 and 8 pay 7 to 6. $12 × 7/6 = $14 profit.",zh:"置注 6 和 8 賠 7:6，$12 × 7/6 = $14 獲利。"},
+  tip:{en:"For 6/8 always bet in multiples of $6 — $12 pays $14, $18 pays $21.",zh:"6 和 8 永遠用 $6 的倍數下——$12 賠 $14，$18 賠 $21。"}},
+ {q:{en:"$10 Field bet, the 12 rolls on a table paying triple on 12. Profit?",zh:"$10 的 Field，開出 12（本桌 12 賠三倍），獲利？"},
+  choices:[{en:"$10",zh:"$10"},{en:"$20",zh:"$20"},{en:"$30",zh:"$30"},{en:"$15",zh:"$15"}],
+  answer:2,
+  explain:{en:"Field pays 2:1 on the 2 and 2:1 or 3:1 on the 12. Triple: $10 × 3 = $30 profit.",zh:"Field 的 2 賠 2 倍，12 賠 2 或 3 倍。三倍時：$10 × 3 = $30 獲利。"},
+  tip:{en:"Check the felt first: some tables pay only double on 12 — it changes the edge.",zh:"先看桌布：有些桌 12 只賠兩倍，莊家優勢完全不同。"}},
+ {q:{en:"Any Seven pays…",zh:"Any Seven 的賠率是……"},
+  choices:[{en:"4 to 1",zh:"4 賠 1"},{en:"7 to 1",zh:"7 賠 1"},{en:"5 to 1",zh:"5 賠 1"},{en:"3 to 1",zh:"3 賠 1"}],
+  answer:0,
+  explain:{en:"Any Seven pays 4 to 1 — a $5 chip wins $20. But 6 of 36 combos make 7, so true odds are 5 to 1.",zh:"Any Seven 賠 4:1——$5 的注贏 $20。但 36 種組合中有 6 種是 7，真實賠率是 5:1。"},
+  tip:{en:"'Any seven' is dealer shorthand — one word, one hop.",zh:"跟荷官說 'any seven'，一個詞、一擲即決。"}},
+ {q:{en:"$5 on Hard 8, and 4-4 rolls. Profit?",zh:"$5 的硬八（Hard 8），開出 4-4，獲利？"},
+  choices:[{en:"$45",zh:"$45"},{en:"$35",zh:"$35"},{en:"$40",zh:"$40"},{en:"$25",zh:"$25"}],
+  answer:0,
+  explain:{en:"Hard 6/8 pay 9 to 1; Hard 4/10 pay 7 to 1. $5 × 9 = $45 profit.",zh:"硬 6/8 賠 9:1，硬 4/10 賠 7:1。$5 × 9 = $45 獲利。"},
+  tip:{en:"Hardways are off on the come-out unless you say 'working' — know before you bet.",zh:"開骰時硬式注預設是關的，除非你說 working——下注前先搞清楚。"}},
+ {q:{en:"Don't Pass on the come-out, the roll is 12. What happens?",zh:"不過關線（Don't Pass）在開骰擲出 12，會怎樣？"},
+  choices:[{en:"You lose",zh:"你輸了"},{en:"Push — bet returned",zh:"和局退注"},{en:"You win",zh:"你贏了"},{en:"Barred — house keeps it",zh:"被擋下，莊家沒收"}],
+  answer:1,
+  explain:{en:"The 12 is 'barred' on Don't Pass come-out: it's a push and your bet is returned.",zh:"12 在 Don't Pass 開骰是被 'bar' 的：和局，退還注金。"},
+  tip:{en:"Say 'twelve bar' — dealers know it as the don't side's come-out shield.",zh:"記住 'twelve bar'——這是不過關方在開骰的護身符。"}},
+ {q:{en:"Point is 6. You have $10 odds behind your Pass Line bet. The 6 rolls — the odds pay…",zh:"點數是 6，過關線後面加了 $10 賠率注。開出 6，賠率注賠……"},
+  choices:[{en:"$10",zh:"$10"},{en:"$12",zh:"$12"},{en:"$15",zh:"$15"},{en:"$20",zh:"$20"}],
+  answer:1,
+  explain:{en:"Odds on 6/8 pay 6 to 5: $10 × 6/5 = $12.",zh:"6/8 的賠率注賠 6:5：$10 × 6/5 = $12。"},
+  tip:{en:"6:5 is the same ratio as a Place 6 — odds just pay it at true odds with no markup.",zh:"6:5 跟置注 6 同比率——賠率注直接給真賠率，沒有加價。"}},
+ {q:{en:"Point is 4. Your $10 Pass Line odds win how much?",zh:"點數是 4，$10 的過關線賠率注贏多少？"},
+  choices:[{en:"$10",zh:"$10"},{en:"$15",zh:"$15"},{en:"$18",zh:"$18"},{en:"$20",zh:"$20"}],
+  answer:3,
+  explain:{en:"Odds on 4/10 pay true 2 to 1: $10 wins $20.",zh:"4/10 的賠率注賠真實賠率 2:1：$10 贏 $20。"},
+  tip:{en:"4/10 odds are the best value on the table — 2:1 true odds, zero house edge.",zh:"4/10 的賠率注是全桌最划算的——2:1 真賠率，零莊家優勢。"}},
+ {q:{en:"A Horn bet covers which numbers?",zh:"Horn 注包含哪幾個數字？"},
+  choices:[{en:"2, 3, 11, 12",zh:"2、3、11、12"},{en:"2, 4, 6, 8",zh:"2、4、6、8"},{en:"7, 11",zh:"7、11"},{en:"Any craps",zh:"所有 craps"}],
+  answer:0,
+  explain:{en:"One Horn wager splits across 2, 3, 11 and 12.",zh:"一個 Horn 注一次分壓 2、3、11、12 四個數字。"},
+  tip:{en:"'Horn high' plus a number loads extra on it — e.g. 'horn high yo' doubles the 11.",zh:"'Horn high' 加數字可以加重其中一個——例如 'horn high yo' 讓 11 變雙倍。"}},
+ {q:{en:"You place a Come bet; the very next roll is 11. What happens?",zh:"下了 Come 注，下一擲馬上開出 11，會怎樣？"},
+  choices:[{en:"Wins 1:1",zh:"贏 1:1"},{en:"Travels to the 11",zh:"移到 11 的格子"},{en:"Loses",zh:"輸了"},{en:"Pushes",zh:"和局"}],
+  answer:0,
+  explain:{en:"A Come bet works like a Pass Line bet on the next roll: 7 or 11 wins immediately.",zh:"Come 注就像下一擲的過關線：7 或 11 馬上贏。"},
+  tip:{en:"Say 'come bet' as you toss the chips — the dealer drops it in the Come box for you.",zh:"丟籌碼時說 'come bet'——荷官會幫你放到 Come 區。"}},
+ {q:{en:"All-Tall-Small (ATS) pays when…",zh:"All-Tall-Small（ATS）在什麼情況下賠付？"},
+  choices:[{en:"Every number 2–12 rolls before a 7",zh:"7 出現前開完 2–12 所有數字"},{en:"Only the point is made",zh:"只看點數有沒有過"},{en:"Any 7 rolls",zh:"開出任意 7"},{en:"The shooter makes 3 points",zh:"擲骰者連過三個點數"}],
+  answer:0,
+  explain:{en:"ATS wins when every 'small' (2–6) or every 'tall' (8–12) number is rolled before a 7 — usually 30:1 for one side, 150:1+ for all.",zh:"ATS 在 7 出現前開齊所有「小」（2–6）或所有「大」（8–12）就贏——通常單邊 30:1，全中 150:1 以上。"},
+  tip:{en:"ATS is a bonus side bet — a fun sweat with a brutal edge. Treat it as entertainment.",zh:"ATS 是附帶的邊注——刺激好玩，但莊家優勢很兇，當娛樂就好。"}},
+ {q:{en:"$10 on Place 5 wins. Profit?",zh:"$10 的置注 5（Place 5）贏了，獲利？"},
+  choices:[{en:"$10",zh:"$10"},{en:"$12",zh:"$12"},{en:"$14",zh:"$14"},{en:"$15",zh:"$15"}],
+  answer:2,
+  explain:{en:"Place 5 and 9 pay 7 to 5: $10 × 7/5 = $14 profit.",zh:"置注 5 和 9 賠 7:5：$10 × 7/5 = $14 獲利。"},
+  tip:{en:"5 and 9 pay 7:5 — bet in multiples of $5 ($10 pays $14, $25 pays $35).",zh:"5 和 9 賠 7:5——用 $5 的倍數下（$10 賠 $14，$25 賠 $35）。"}}
+];
+var FALLBACK_PHRASES = [
+ {say:{en:"Place the six, please.",zh:"請幫我下六點的置注。"},
+  when:{en:"You want a Place 6 bet and the point is already on.",zh:"點數已定，你想下置注 6。"},
+  means:{en:"The dealer sets your chips in the 6 box; it pays 7:6 if 6 rolls before 7.",zh:"荷官把籌碼放到 6 的格子；7 出現前開出 6 賠 7:6。"}},
+ {say:{en:"Odds on my pass line.",zh:"我的過關線加賠率。"},
+  when:{en:"After a point is established and you want max odds behind your line bet.",zh:"點數確定後，想在過關線後面加最大賠率注。"},
+  means:{en:"The dealer places your odds bet behind the Pass Line; paid at true odds.",zh:"荷官把賠率注放在過關線後面，按真實賠率賠付。"}},
+ {say:{en:"Hard eight, working on the come-out.",zh:"硬八，開骰也算。"},
+  when:{en:"You want your hardway bet to stay live during the come-out roll.",zh:"你想讓硬式注在開骰那一擲也保持作用。"},
+  means:{en:"Hardways are normally off on come-out; this keeps yours working.",zh:"硬式注開骰預設是關的；這樣說就讓它繼續作用。"}},
+ {say:{en:"Horn high yo.",zh:"喇叭注，十一點加倍。"},
+  when:{en:"You want a $5+ horn bet with double on the 11 (yo).",zh:"你想下 $5 以上的 horn，其中 11 加倍（yo）。"},
+  means:{en:"$2 on the 11, $1 each on 2, 3 and 12.",zh:"$2 在 11 上，2、3、12 各 $1。"}},
+ {say:{en:"Same bet.",zh:"同樣再來一次。"},
+  when:{en:"After a one-roll proposition bet wins and you want to repeat it.",zh:"單擲邊注贏了，想原樣再下一次。"},
+  means:{en:"The dealer repeats your last prop bet exactly.",zh:"荷官把你上一手的邊注原封不動再下一遍。"}},
+ {say:{en:"My place bets are off.",zh:"我的置注先關掉。"},
+  when:{en:"You want to skip a roll or two without taking bets down.",zh:"想跳過一兩擲，但不想把注收回來。"},
+  means:{en:"Bets stay on the layout but can't win or lose; say 'working' to turn them back on.",zh:"注留在桌上但不輸不贏；說 working 就重新啟動。"}}
+];
+var FALLBACK_MISTAKES = [
+ {t:{en:"Betting Any Seven over and over",zh:"一直重複下 Any Seven"},
+  d:{en:"16.7% house edge — the worst bet on the felt. One hop for fun is fine; a strategy it is not.",zh:"莊家優勢 16.7%，是整張桌子最爛的注。偶爾玩一手可以，當策略不行。"}},
+ {t:{en:"Wrong increments on place bets",zh:"置注金額用錯級距"},
+  d:{en:"Place 6/8 in multiples of $6 ($12 pays $14); 5/9 in multiples of $5. Odd amounts get rounded down — in the house's favor.",zh:"置注 6/8 要用 $6 的倍數（$12 賠 $14），5/9 用 $5 的倍數。金額不對會被無條件捨去，虧的是你。"}},
+ {t:{en:"Skipping odds behind the line",zh:"過關線不加賠率注"},
+  d:{en:"Odds are the only zero-edge bet in the casino. If you're betting the line, back it with odds.",zh:"賠率注是賭場唯一零莊家優勢的注。既然下過關線，就該加賠率。"}},
+ {t:{en:"Leaving hardways working on the come-out by accident",zh:"開骰時不小心讓硬式注保持作用中"},
+  d:{en:"Hardways lose on any 7 or easy way, and 7/11 come often on come-out. Most players keep them off unless they say otherwise.",zh:"硬式注遇到 7 或軟點就輸，開骰又常出 7/11。多數玩家會先關掉，除非特別說明。"}},
+ {t:{en:"Tossing chips into the betting area yourself",zh:"自己把籌碼丟進下注區"},
+  d:{en:"Only the shooter handles the dice; all bets go through the dealer. Set chips in front of you and say the bet.",zh:"只有擲骰者能碰骰子；所有注都要經荷官。把籌碼放在面前說出注名就好。"}},
+ {t:{en:"Touching your bet after 'dice are out'",zh:"荷官喊 dice out 後還碰注碼"},
+  d:{en:"Once the stickman calls 'dice out', hands out of the layout. Wait for the call.",zh:"骰子一出手，手就離開桌面。等荷官喊完再動作。"}},
+ {t:{en:"Pressing every win with no plan",zh:"贏了就一直加注追"},
+  d:{en:"Pressing (raising) every win feels great until the 7 shows. Set a press plan — e.g. press once, then collect.",zh:"每贏必加注很爽，直到 7 出現。先定好加注計畫，例如加一次就收。"}},
+ {t:{en:"Playing the Field as a main strategy",zh:"把 Field 當主力策略"},
+  d:{en:"Field looks busy but pays even money on most rolls — 2.8–5.6% edge depending on the 2/12 pay. Fine for action, bad as a core bet.",zh:"Field 看起來很熱鬧，但多數點數只賠 1:1，莊家優勢 2.8–5.6%（看 2/12 賠率）。玩氣氛可以，當核心不行。"}}
+];
+
+function bankOK(b){ return (typeof b !== "undefined") && Array.isArray(b) && b.length > 0 && b[0] && b[0].q && b[0].choices; }
+var QUIZ    = bankOK(typeof QUIZ_BANK !== "undefined" ? QUIZ_BANK : undefined) ? QUIZ_BANK : FALLBACK_QUIZ;
+var PHRASES = bankOK(typeof DEALER_PHRASES !== "undefined" ? DEALER_PHRASES : undefined) ? DEALER_PHRASES : FALLBACK_PHRASES;
+var MISTAKES= bankOK(typeof BEGINNER_MISTAKES !== "undefined" ? BEGINNER_MISTAKES : undefined) ? BEGINNER_MISTAKES : FALLBACK_MISTAKES;
+
+/* ---------- tiny helpers ---------- */
+function L(o){ return (LANG === "zh" ? o.zh : o.en) || o.en; }
+function shuffle(a){ a = a.slice(); for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function store(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e){} }
+function read(k){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e){ return null; } }
+
+/* ---------- 1. Payout quiz ---------- */
+var quiz = { active:false, order:[], idx:0, score:0 };
+function startQuiz(){
+  var n = Math.min(10, QUIZ.length);
+  quiz = { active:true, idx:0, score:0, order: shuffle(QUIZ).slice(0, n).map(function(it){
+    var idxs = []; for (var i = 0; i < it.choices.length; i++) idxs.push(i);
+    return { it: it, order: shuffle(idxs), picked: -1 };
+  })};
+  renderQuiz();
+}
+function renderQuiz(){
+  var box = $("quizBox"); if (!box) return;
+  var html = "";
+  if (!quiz.active){
+    var best = read("crapslab_quiz_best");
+    html = '<div class="card center"><p class="big">' + esc(t("quiz_d")) + '</p>' +
+      (best ? '<p class="muted">' + esc(t("quiz_best")) + ': <b>' + best.score + "/" + best.total + '</b></p>' : "") +
+      '<button class="btn" onclick="startQuiz()">' + esc(t("quiz_start")) + '</button></div>';
+  } else if (quiz.idx >= quiz.order.length){
+    var pct = Math.round(100 * quiz.score / quiz.order.length);
+    var best2 = read("crapslab_quiz_best");
+    html = '<div class="card center"><h3>🏁 ' + esc(t("quiz_done_h")) + '</h3>' +
+      '<p class="big">' + quiz.score + " / " + quiz.order.length + ' <span class="muted">(' + pct + '%)</span></p>' +
+      (best2 ? '<p class="muted">' + esc(t("quiz_best")) + ': <b>' + best2.score + "/" + best2.total + '</b></p>' : "") +
+      '<button class="btn" onclick="startQuiz()">' + esc(t("quiz_again")) + '</button></div>';
+  } else {
+    var cur = quiz.order[quiz.idx], it = cur.it, i, ci, cls, dis;
+    html = '<div class="card"><div class="kv"><span><b>Q ' + (quiz.idx + 1) + " / " + quiz.order.length + '</b></span><span>' +
+      esc(t("quiz_score")) + ': <b>' + quiz.score + '</b></span></div>' +
+      '<p class="big">' + esc(L(it.q)) + '</p>';
+    for (i = 0; i < cur.order.length; i++){
+      ci = cur.order[i]; cls = "quiz-opt"; dis = "";
+      if (cur.picked >= 0){ dis = " disabled"; cls += (ci === it.answer) ? " right" : (i === cur.picked ? " wrong" : ""); }
+      html += '<button class="' + cls + '"' + dis + ' onclick="answerQuiz(' + i + ')">' + esc(L(it.choices[ci])) + '</button>';
+    }
+    if (cur.picked >= 0){
+      var ok = cur.order[cur.picked] === it.answer;
+      html += '<div class="callout"><b>' + (ok ? "✓" : "✗") + '</b> ' + esc(L(it.explain)) +
+        '<br>💡 <i>' + esc(L(it.tip)) + '</i></div>' +
+        '<button class="btn small" onclick="nextQuiz()">' + esc(quiz.idx + 1 >= quiz.order.length ? t("quiz_results") : t("quiz_next")) + '</button>';
+    }
+    html += '</div>';
+  }
+  box.innerHTML = html;
+}
+function answerQuiz(i){
+  var cur = quiz.order[quiz.idx];
+  if (!cur || cur.picked >= 0) return;
+  cur.picked = i;
+  if (cur.order[i] === cur.it.answer) quiz.score++;
+  renderQuiz();
+}
+function nextQuiz(){
+  quiz.idx++;
+  if (quiz.idx >= quiz.order.length){
+    var best = read("crapslab_quiz_best");
+    if (!best || quiz.score > best.score) store("crapslab_quiz_best", { score: quiz.score, total: quiz.order.length });
+  }
+  renderQuiz();
+}
+
+/* ---------- 2. Click-to-place layout trainer ---------- */
+/* pos = [left%, top%, width%, height%] on the felt */
+var BETS = [
+  {id:"pass",     name:{en:"Pass Line",zh:"過關線"},   short:{en:"PASS",zh:"過關"},   amt:10, pos:[2,87,64,11]},
+  {id:"dontpass", name:{en:"Don't Pass",zh:"不過關線"}, short:{en:"DON'T",zh:"不過關"}, amt:10, pos:[2,78,64,8]},
+  {id:"field",    name:{en:"Field",zh:"外圍注"},       short:{en:"FIELD",zh:"Field"}, amt:5,  pos:[2,68,64,9]},
+  {id:"come",     name:{en:"Come",zh:"來注"},          short:{en:"COME",zh:"來注"},   amt:10, pos:[2,58,64,9]},
+  {id:"place4",   name:{en:"Place 4",zh:"置注 4"},     short:{en:"4",zh:"4"},         amt:20, pos:[2,40,10.4,15]},
+  {id:"place5",   name:{en:"Place 5",zh:"置注 5"},     short:{en:"5",zh:"5"},         amt:10, pos:[13,40,10.4,15]},
+  {id:"place6",   name:{en:"Place 6",zh:"置注 6"},     short:{en:"6",zh:"6"},         amt:12, pos:[23.8,40,10.4,15]},
+  {id:"place8",   name:{en:"Place 8",zh:"置注 8"},     short:{en:"8",zh:"8"},         amt:12, pos:[34.6,40,10.4,15]},
+  {id:"place9",   name:{en:"Place 9",zh:"置注 9"},     short:{en:"9",zh:"9"},         amt:10, pos:[45.4,40,10.4,15]},
+  {id:"place10",  name:{en:"Place 10",zh:"置注 10"},   short:{en:"10",zh:"10"},       amt:20, pos:[56.2,40,10.4,15]},
+  {id:"hard4",    name:{en:"Hard 4",zh:"硬 4"},        short:{en:"H4",zh:"硬4"},      amt:5,  pos:[2,23,13,13]},
+  {id:"hard6",    name:{en:"Hard 6",zh:"硬 6"},        short:{en:"H6",zh:"硬6"},      amt:5,  pos:[16.5,23,13,13]},
+  {id:"hard8",    name:{en:"Hard 8",zh:"硬 8"},        short:{en:"H8",zh:"硬8"},      amt:5,  pos:[31,23,13,13]},
+  {id:"hard10",   name:{en:"Hard 10",zh:"硬 10"},      short:{en:"H10",zh:"硬10"},    amt:5,  pos:[45.5,23,13,13]},
+  {id:"ats",      name:{en:"All-Tall-Small",zh:"大小通吃"}, short:{en:"ATS",zh:"ATS"}, amt:5, pos:[60,23,20,13]},
+  {id:"anyseven", name:{en:"Any Seven",zh:"任意七點"},  short:{en:"ANY 7",zh:"任意7"}, amt:5,  pos:[82,6,16,15]},
+  {id:"horn",     name:{en:"Horn",zh:"喇叭注"},        short:{en:"HORN",zh:"喇叭"},   amt:4,  pos:[82,23,16,15]}
+];
+var trainer = { target:null, streak:0, hits:0, chips:[] };
+function betById(id){ for (var i = 0; i < BETS.length; i++) if (BETS[i].id === id) return BETS[i]; return null; }
+function newTarget(){
+  var pool = BETS.filter(function(b){ return !trainer.target || b.id !== trainer.target.id; });
+  trainer.target = pool[Math.floor(Math.random() * pool.length)];
+}
+function renderFelt(){
+  var felt = $("felt"); if (!felt) return;
+  var html = "", i, j, b, p;
+  for (i = 0; i < BETS.length; i++){
+    b = BETS[i]; p = b.pos;
+    html += '<div class="lz" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + '%;height:' + p[3] +
+      '%" onclick="tapZone(\'' + b.id + '\',this)"><span class="zlab">' + esc(L(b.short)) + '</span>';
+    for (j = 0; j < trainer.chips.length; j++)
+      if (trainer.chips[j].id === b.id) html += '<span class="chip">$' + trainer.chips[j].amt + '</span>';
+    html += '</div>';
+  }
+  felt.innerHTML = html;
+  var show = read("crapslab_trainer_labels");
+  felt.classList.toggle("hidelab", show === false);
+  var tg = $("labtoggle"); if (tg) tg.checked = show !== false;
+}
+function renderTrainer(){
+  var pr = $("tprompt"); if (!pr) return;
+  if (!trainer.target) newTarget();
+  var b = trainer.target;
+  pr.innerHTML = esc(t("trainer_tap")).replace("{amt}", "$" + b.amt).replace("{bet}", "<b>" + esc(L(b.name)) + "</b>");
+  var best = read("crapslab_trainer_best") || 0;
+  $("tstreak").textContent = t("trainer_streak") + ": " + trainer.streak;
+  $("tbest").textContent = t("trainer_best") + ": " + best;
+  $("thits").textContent = t("trainer_hits") + ": " + trainer.hits;
+  $("tclearbtn").textContent = t("trainer_clear");
+  $("labt").textContent = t("trainer_labels");
+}
+function tapZone(id, el){
+  var b = betById(id);
+  if (!b || !trainer.target) return;
+  if (id === trainer.target.id){
+    el.classList.add("goodflash");
+    trainer.chips.push({ id:id, amt:trainer.target.amt });
+    var chip = document.createElement("span");
+    chip.className = "chip"; chip.textContent = "$" + trainer.target.amt;
+    el.appendChild(chip);
+    trainer.streak++; trainer.hits++;
+    var best = read("crapslab_trainer_best") || 0;
+    if (trainer.streak > best) store("crapslab_trainer_best", trainer.streak);
+    renderTrainer();
+    setTimeout(function(){ el.classList.remove("goodflash"); newTarget(); renderTrainer(); }, 750);
+  } else {
+    el.classList.add("badflash");
+    trainer.streak = 0;
+    setTimeout(function(){ el.classList.remove("badflash"); }, 650);
+    renderTrainer();
+  }
+}
+function clearFelt(){ trainer.chips = []; renderFelt(); }
+function toggleLabels(el){
+  var felt = $("felt"); if (felt) felt.classList.toggle("hidelab", !el.checked);
+  store("crapslab_trainer_labels", el.checked);
+}
+
+/* ---------- 3. Dealer phrase scripts ---------- */
+function renderPhrases(){
+  var box = $("phrasesBox"); if (!box) return;
+  var html = "", i, p;
+  for (i = 0; i < PHRASES.length; i++){
+    p = PHRASES[i];
+    html += '<div class="card"><div class="say">\u201c' + esc(L(p.say)) + '\u201d</div>' +
+      '<div class="kv"><span class="muted">' + esc(t("dealer_when")) + '</span>' +
+      '<span style="text-align:right;max-width:62%">' + esc(L(p.when)) + '</span></div>' +
+      '<div class="kv"><span class="muted">' + esc(t("dealer_means")) + '</span>' +
+      '<span style="text-align:right;max-width:62%">' + esc(L(p.means)) + '</span></div></div>';
+  }
+  box.innerHTML = html;
+}
+
+/* ---------- 4. Beginner mistakes checklist ---------- */
+var misChecked = (function(){ var m = read("crapslab_mistakes"); return (m && typeof m === "object") ? m : {}; })();
+function renderMistakes(){
+  var box = $("misBox"); if (!box) return;
+  var total = MISTAKES.length, done = 0, i, m;
+  for (i = 0; i < total; i++) if (misChecked[i]) done++;
+  var html = '<p><span class="pill">' + done + " / " + total + " " + esc(t("mis_progress")) + '</span></p><div class="card">';
+  for (i = 0; i < total; i++){
+    m = MISTAKES[i];
+    html += '<label class="checkrow"><input type="checkbox"' + (misChecked[i] ? " checked" : "") +
+      ' onchange="toggleMis(' + i + ',this)"><span><b>' + esc(L(m.t)) + '</b><br><span class="muted">' +
+      esc(L(m.d)) + '</span></span></label>';
+  }
+  html += '</div><button class="btn small ghost" onclick="resetMis()">' + esc(t("mis_reset")) + '</button>';
+  box.innerHTML = html;
+}
+function toggleMis(i, el){ misChecked[i] = el.checked ? 1 : 0; store("crapslab_mistakes", misChecked); renderMistakes(); }
+function resetMis(){ misChecked = {}; store("crapslab_mistakes", misChecked); renderMistakes(); }
+
+/* ---------- 1b. Dealer drills (flashcards) ---------- */
+var DRILLS = (typeof DEALER_DRILLS !== "undefined" && Array.isArray(DEALER_DRILLS)) ? DEALER_DRILLS : [];
+var drillFlipped = {};
+function renderDrills(){
+  var box = $("drillsBox"); if (!box) return;
+  if (!DRILLS.length){ box.innerHTML = ""; return; }
+  box.innerHTML = '<div class="grid cols2">' + DRILLS.map(function(d, i){
+    var f = drillFlipped[i];
+    return '<div class="card"><p><b>' + (i+1) + '.</b> ' + esc(L(d.q)) + '</p>' +
+      (f ? '<div class="callout"><b>💰 ' + esc(L(d.a)) + '</b><br>💡 <i>' + esc(L(d.hint)) + '</i></div>'
+         : '<button class="btn small ghost" onclick="drillFlipped[' + i + ']=1;renderDrills()">' + esc(t("drills_reveal")) + '</button>') +
+      '</div>';
+  }).join('') + '</div>';
+}
+
+/* ---------- language-aware re-render (called by setLang) ---------- */
+function renderDynamic(){
+  renderQuiz();
+  renderDrills();
+  renderFelt();
+  renderTrainer();
+  renderPhrases();
+  renderMistakes();
+}
+renderDynamic();
+</script>
+<script>document.write(footerHTML());</script>
+</body>
+</html>

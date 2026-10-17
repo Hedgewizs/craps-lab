@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — Batch Lab</title>
+<meta name="description" content="Run 1,000–100,000 scripted craps sessions. Win rate, percentiles, ruin probability, expected loss — the loss tail shown honestly.">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<script src="craps-engine.js"></script>
+<script>
+Object.assign(I18N.en,{
+  batch_title:"Batch Lab", batch_intro:"Pick a strategy, run thousands of sessions, and look at the whole distribution — not just the win rate. Every strategy loses to the edge; the question is how, and how fast.",
+  n_sessions:"Sessions", run_batch:"Run batch", running:"Running…",
+  win_rate:"Win rate (hit goal)", p_ruin:"P(ruin)", p_goal:"P(hit goal)",
+  mean_pl:"Mean P&L", median_pl:"Median P&L", best:"Best", worst:"Worst",
+  p5:"5th %ile", p95:"95th %ile", ev_session:"Expected loss / session",
+  theo_session:"Theoretical / session", n_bust:"Busted", n_goal:"Hit goal",
+  histogram:"P&L distribution", verdict:"verdict",
+  b_note:"Win rate is shown next to expected value — never alone. A 40% win rate with −$30 expected loss is not 'almost winning'.",
+});
+Object.assign(I18N.zh,{
+  batch_title:"批量實驗室", batch_intro:"選一個策略，跑數千次 session，看完整分佈——不只看勝率。每個策略都輸給莊家優勢；問題是怎麼輸、多快輸。",
+  n_sessions:"模擬次數", run_batch:"執行批量", running:"執行中…",
+  win_rate:"勝率（達標）", p_ruin:"破產機率", p_goal:"達標機率",
+  mean_pl:"平均損益", median_pl:"中位數損益", best:"最佳", worst:"最差",
+  p5:"5 百分位", p95:"95 百分位", ev_session:"每 session 期望損失",
+  theo_session:"理論值 / session", n_bust:"破產次數", n_goal:"達標次數",
+  histogram:"損益分佈", verdict:"結論",
+  b_note:"勝率一定和期望值並列呈現——絕不單獨出現。40% 勝率配 −$30 期望損失，不叫「差點贏」。",
+});
+let running=false;
+function runBatch(){
+  if(running) return;
+  const strat=document.getElementById('b_strat').value;
+  const n=+document.getElementById('b_n').value;
+  const cfg={
+    bankroll:+document.getElementById('b_bank').value||500,
+    winGoal:+document.getElementById('b_goal').value||200,
+    stopLoss:+document.getElementById('b_stop').value||0,
+    tableMin:+document.getElementById('b_min').value||5,
+    tableMax:10000,
+    oddsMax:document.getElementById('b_odds').value,
+    fieldPay:'2x', buyVig:'upfront',
+    crapless:document.getElementById('b_crapless').checked,
+    maxRolls:500,
+  };
+  running=true;
+  document.getElementById('runbtn').textContent=t('running');
+  document.getElementById('results').innerHTML='<p class="muted">'+t('running')+'</p>';
+  const results=[]; let i=0; const CH=200;
+  const seedBase=(Math.random()*1e9)|0;
+  function chunk(){
+    const end=Math.min(i+CH,n);
+    for(;i<end;i++){
+      const eng=new CrapsEngine(Object.assign({seed:seedBase+i},cfg));
+      runSession(eng,STRATEGIES[strat],cfg);
+      results.push(eng.bankroll-cfg.bankroll);
+    }
+    document.getElementById('results').innerHTML=`<p class="muted">${t('running')} ${i}/${n}</p><div class="bar"><i style="width:${(i/n*100).toFixed(1)}%"></i></div>`;
+    if(i<n) setTimeout(chunk,0);
+    else finish(results,cfg,n,strat);
+  }
+  setTimeout(chunk,30);
+}
+function percentile(a,p){ const s=[...a].sort((x,y)=>x-y); return s[Math.min(s.length-1,Math.floor(p*s.length))]; }
+function finish(r,cfg,n,strat){
+  running=false;
+  document.getElementById('runbtn').textContent=t('run_batch');
+  const wins=r.filter(x=>x>=cfg.winGoal).length;
+  const bust=r.filter(x=>x<=-cfg.bankroll+1e-9||x<=-cfg.stopLoss&&cfg.stopLoss>0).length;
+  const mean=r.reduce((a,b)=>a+b,0)/n;
+  const med=percentile(r,.5), p5=percentile(r,.05), p95=percentile(r,.95);
+  const best=Math.max(...r), worst=Math.min(...r);
+  const name=sname(strat);
+  document.getElementById('results').innerHTML=`
+    <h3 style="color:var(--gold)">${name} · ${n.toLocaleString()} ${t('sessions')}</h3>
+    <div class="callout">⚠️ ${t('b_note')}</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="v">${(wins/n*100).toFixed(1)}%</div><div class="l">${t('win_rate')}</div></div>
+      <div class="stat"><div class="v neg">${(bust/n*100).toFixed(1)}%</div><div class="l">${t('p_ruin')}</div></div>
+      <div class="stat"><div class="v ${mean>=0?'pos':'neg'}">$${mean.toFixed(0)}</div><div class="l">${t('mean_pl')}</div></div>
+      <div class="stat"><div class="v ${med>=0?'pos':'neg'}">$${med.toFixed(0)}</div><div class="l">${t('median_pl')}</div></div>
+      <div class="stat"><div class="v pos">$${best.toFixed(0)}</div><div class="l">${t('best')}</div></div>
+      <div class="stat"><div class="v neg">$${worst.toFixed(0)}</div><div class="l">${t('worst')}</div></div>
+      <div class="stat"><div class="v neg">$${p5.toFixed(0)}</div><div class="l">${t('p5')}</div></div>
+      <div class="stat"><div class="v">$${p95.toFixed(0)}</div><div class="l">${t('p95')}</div></div>
+    </div>
+    <div class="card"><h3 style="color:var(--gold);margin-top:0">📊 ${t('histogram')}</h3><canvas class="chart" id="hist"></canvas></div>
+    <div class="callout"><b>✅ ${t('verdict')}:</b> ${verdictText(strat,mean,med,wins/n,bust/n)}</div>`;
+  drawHist(r);
+}
+function verdictText(strat,mean,med,wr,br){
+  const en = LANG!=='zh';
+  if(en) return `Over the long run this strategy loses about $${Math.abs(mean).toFixed(0)} per session on average (median $${med.toFixed(0)}). It hits the win goal ${(wr*100).toFixed(1)}% of the time and busts ${(br*100).toFixed(1)}%. The wins are real but the losses are bigger — that asymmetry IS the house edge, wearing a costume.`;
+  return `長期來看，這個策略平均每 session 輸約 $${Math.abs(mean).toFixed(0)}（中位數 $${med.toFixed(0)}）。達標率 ${(wr*100).toFixed(1)}%，破產率 ${(br*100).toFixed(1)}%。贏是真的，但輸得更多——這種不對稱就是莊家優勢，只是換了件衣服。`;
+}
+function drawHist(r){
+  const c=document.getElementById('hist'); if(!c) return;
+  const ctx=c.getContext('2d'); const W=c.width=c.offsetWidth*2, H=c.height=520;
+  const min=Math.min(...r), max=Math.max(...r), B=40;
+  const bins=new Array(B).fill(0);
+  r.forEach(v=>{ const b=Math.min(B-1,Math.floor((v-min)/((max-min)||1)*B)); bins[b]++; });
+  const mx=Math.max(...bins);
+  const bw=W/B;
+  bins.forEach((n,i)=>{ const h=n/mx*(H-60); ctx.fillStyle='#d4af37'; ctx.fillRect(i*bw+1,H-30-h,bw-2,h); });
+  // zero line
+  const zx=(0-min)/((max-min)||1)*W;
+  ctx.strokeStyle='#e05252'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(zx,10); ctx.lineTo(zx,H-30); ctx.stroke();
+  ctx.fillStyle='#cfc9b4'; ctx.font='24px sans-serif';
+  ctx.fillText('$'+Math.round(min),8,H-8); ctx.fillText('$'+Math.round(max),W-110,H-8);
+  ctx.fillStyle='#e05252'; ctx.fillText('$0',zx+6,30);
+}
+function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
+function onLangChange(){
+  const s=document.getElementById('b_strat');
+  s.innerHTML=Object.keys(STRATEGIES).map(k=>`<option value="${k}">${sname(k)}</option>`).join('');
+}
+</script>
+</head>
+<body>
+<script>document.write(navHTML('batch.html'));</script>
+<div class="wrap"><section class="block">
+<h1 style="color:var(--gold)" data-i18n="batch_title">Batch Lab</h1>
+<p data-i18n="batch_intro"></p>
+<script>document.write(adSlot());</script>
+<div class="card"><div class="rowflex">
+  <label class="f">Strategy<br><select id="b_strat"></select></label>
+  <label class="f"><span data-i18n="n_sessions">Sessions</span><br><select id="b_n">
+    <option value="1000">1,000</option><option value="10000" selected>10,000</option><option value="100000">100,000</option>
+  </select></label>
+  <label class="f"><span data-i18n="bankroll">Bankroll</span><br><input type="number" id="b_bank" value="500" style="width:110px"></label>
+  <label class="f"><span data-i18n="win_goal">Win goal</span><br><input type="number" id="b_goal" value="200" style="width:110px"></label>
+  <label class="f"><span data-i18n="stop_loss">Stop loss</span><br><input type="number" id="b_stop" value="500" style="width:110px"></label>
+  <label class="f"><span data-i18n="table_min">Table min</span><br><input type="number" id="b_min" value="10" style="width:90px"></label>
+  <label class="f"><span data-i18n="max_odds">Max odds</span><br><select id="b_odds">
+    <option value="345">3-4-5x</option><option value="10">10x</option><option value="100">100x</option>
+  </select></label>
+</div>
+<div class="checkrow"><input type="checkbox" id="b_crapless"><label for="b_crapless" data-i18n="crapless">Crapless table</label></div>
+<div class="mt"><button class="btn" id="runbtn" onclick="runBatch()" data-i18n="run_batch">Run batch</button></div>
+</div>
+<div id="results"></div>
+<script>document.write(adSlot());</script>
+<script>document.write(disclosure());</script>
+</section></div>
+<script>document.write(footerHTML());</script>
+<script>onLangChange();</script>
+</body>
+</html>

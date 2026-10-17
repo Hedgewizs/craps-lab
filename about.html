@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About — Craps Lab</title>
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+</head>
+<body>
+<script>document.write(navHTML('about.html'));</script>
+<div class="wrap">
+  <section class="block">
+    <h2 class="sec">About Craps Lab</h2>
+    <div id="aboutBody"></div>
+    <script>document.write(adSlot());</script>
+    <script>document.write(disclosure());</script>
+  </section>
+</div>
+<script>document.write(footerHTML());</script>
+<script>
+const ABOUT = {
+en:`<div class="card"><p class="big">I'm a craps player. I play for the comps, the cruise offers, and the sheer theater of a hot table — and I built the tool I always wanted: a simulator that tells the truth.</p>
+<p>Every "can't lose" system you've heard at the table has been run through 100,000 simulated sessions here. The math is the math. A 97% win rate can still bleed you dry if the 3% is catastrophic — the Batch Lab shows you the loss tail nobody selling a system will show you.</p>
+<p><b>What this site is:</b> a free educational simulator. Real dice math (two independent dice, always), every bet on a modern layout including crapless tables, honest house edges, and practice tools so you walk up to a real table knowing what to say to the dealer.</p>
+<p><b>What this site is not:</b> a way to beat craps. There isn't one. If anyone tells you otherwise, they're selling something.</p>
+<p>Play crapless? Buying the 2 and 12 with commission-only-on-wins is a ~0.71% edge bet — one of the only genuinely good bets most players have never heard of. It's in the Variants tab. You're welcome.</p></div>`,
+zh:`<div class="card"><p class="big">我是個玩花旗骰的玩家。為了 comps、為了郵輪優惠、也為了熱桌那種戲劇張力——而我做了我一直想要的工具：一個說真話的模擬器。</p>
+<p>你在賭桌邊聽過的每種「必勝」系統，這裡都用 100,000 次模擬 session 跑過。數學就是數學。97% 勝率也可能讓你慢慢失血，如果那 3% 是災難性的——批量實驗室會給你看賣系統的人永遠不會給你看的虧損尾部。</p>
+<p><b>本站是：</b>免費教育模擬器。真實骰子數學（永遠是兩顆獨立骰子）、現代賭桌上的每種注（含無敗骰桌）、誠實的莊家優勢，以及練習工具，讓你走上真實賭桌時知道怎麼跟荷官溝通。</p>
+<p><b>本站不是：</b>戰勝花旗骰的方法。這東西不存在。跟你說有的，都是在賣東西。</p>
+<p>玩無敗骰？用「只贏才收佣」的方式買 2 和 12，莊家優勢只有約 0.71%——是多數玩家沒聽過的真正好注。在 Variants 分頁裡。不客氣。</p></div>`};
+function renderDynamic(){ document.getElementById('aboutBody').innerHTML = ABOUT[LANG]; }
+</script>
+</body>
+</html>
