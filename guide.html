@@ -14,7 +14,7 @@
 if (typeof DEALER_GUIDE !== "undefined") GUIDES.push(DEALER_GUIDE);
 Object.assign(I18N.en,{
   guide_title:"Strategy Guide", guide_intro:"Ten chapters, one honest theme: every bet has a price, and the price is printed below. Read in order, or jump to what you play.",
-  glossary_h:"Glossary", glossary_d:"25 terms, EN + 繁中.",
+  glossary_h:"Glossary", glossary_d:"25 terms, EN + 中.",
   mathbox_h:"The math", verdict_h:"The verdict",
 });
 Object.assign(I18N.zh,{
@@ -32,7 +32,7 @@ function renderGuide(){
   ).join('') + `<button class="tab${guideTab==='glossary'?' active':''}" onclick="guideTab='glossary';renderGuide()">📖 ${t('glossary_h')}</button>`;
   if(guideTab==='glossary'){
     pane.innerHTML = `<p class="muted">${t('glossary_d')}</p>
-      <table class="data"><tr><th>EN</th><th>繁中</th><th></th></tr>
+      <table class="data"><tr><th>EN</th><th>中</th><th></th></tr>
       ${GLOSSARY.map(g=>`<tr><td><b>${g.en}</b></td><td><b>${g.zh}</b></td><td>${pickLang(g.def)}</td></tr>`).join('')}
       </table>`;
     return;
