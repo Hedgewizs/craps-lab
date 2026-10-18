@@ -91,6 +91,11 @@ canvas.chart{width:100%;height:260px;background:#04150f;border:1px solid var(--l
 /* ---------- ad slots ---------- */
 .ad-slot{margin:22px auto;max-width:728px;min-height:90px;border:1px dashed #4a5a52;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#6b7a72;font-size:.75rem;letter-spacing:2px;background:rgba(255,255,255,.02)}
 .ad-note{font-size:.78rem;color:#8a968f;text-align:center;max-width:640px;margin:0 auto 8px}
+/* ---------- house ad: bottom banner, high-visibility ---------- */
+.house-ad{margin:36px auto 8px;max-width:728px;border-radius:10px;background:linear-gradient(135deg,#f5b942,#e8930c);color:#1a1206;padding:22px 26px;text-align:center;box-shadow:0 4px 24px rgba(232,147,12,.25)}
+.house-ad-label{display:block;font-size:.72rem;letter-spacing:3px;text-transform:uppercase;font-weight:700;opacity:.7;margin-bottom:8px}
+.house-ad-link{display:inline-block;font-size:1.12rem;font-weight:800;color:#1a1206;text-decoration:none;border-bottom:2px solid rgba(26,18,6,.4);letter-spacing:normal}
+.house-ad-link:hover{border-bottom-color:#1a1206}
 /* ---------- misc ---------- */
 footer.site{border-top:2px solid var(--gold-dim);margin-top:40px;padding:24px 16px;text-align:center;color:var(--cream-dim);font-size:.85rem}
 .disclosure{background:rgba(224,82,82,.08);border:1px solid rgba(224,82,82,.35);border-radius:10px;padding:14px 18px;font-size:.88rem;margin:18px 0}

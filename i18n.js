@@ -62,8 +62,8 @@ function setLang(l){
   if (typeof renderDynamic === 'function') renderDynamic();
 }
 function adSlot(){
-  return `<div class="ad-slot"><span data-i18n="house_ad_label">${t('house_ad_label')}</span>&nbsp;<a href="https://hedgewizs.github.io/thecasinocruiser/" target="_blank" rel="noopener" data-i18n="house_ad_text" style="letter-spacing:normal;font-size:.95rem">${t('house_ad_text')}</a></div>
-  <!-- AdSense: paste responsive ad unit code inside .ad-slot above; keep the label -->`;
+  return `<div class="house-ad"><span class="house-ad-label" data-i18n="house_ad_label">${t('house_ad_label')}</span><a class="house-ad-link" href="https://hedgewizs.github.io/thecasinocruiser/" target="_blank" rel="noopener" data-i18n="house_ad_text">${t('house_ad_text')}</a></div>
+  <!-- AdSense: paste responsive ad unit code inside .house-ad above; keep the label -->`;
 }
 function disclosure(){
   return `<div class="disclosure">⚠️ ${t('disclosure')}</div>`;
