@@ -19,6 +19,8 @@ en:{
   max_odds:"Max odds", field_pay:"Field pay", buy_vig:"Buy vig", crapless:"Crapless table",
   point:"Point", comeout:"Come-out", bankroll_now:"Bankroll",
   ad_label:"ADVERTISEMENT",
+  house_ad_label:"Our sites",
+  house_ad_text:"🚢 The Casino Cruiser — cruise free on casino comps",
   disclosure:"Craps Lab is a free educational simulator. No real money is wagered here. Every strategy on this site loses to the house edge in the long run — the math is shown honestly so you can see it for yourself.",
   footer_by:"Built for players who want the truth about the math.",
   start:"Start", stop:"Stop", reset:"Reset", run:"Run",
@@ -40,6 +42,8 @@ zh:{
   max_odds:"最大賠率", field_pay:"Field 賠付", buy_vig:"買注佣金", crapless:"無敗骰桌",
   point:"點數", comeout:"開骰", bankroll_now:"賭本",
   ad_label:"廣告",
+  house_ad_label:"我們的網站",
+  house_ad_text:"🚢 The Casino Cruiser —— 賭場回饋免費郵輪",
   disclosure:"Craps Lab 是免費教育模擬器，不涉及真錢投注。本站所有策略長期都輸給莊家優勢——數學誠實呈現，讓你自己看見。",
   footer_by:"為想看清數學真相的玩家而建。",
   start:"開始", stop:"停止", reset:"重設", run:"執行",
@@ -53,12 +57,12 @@ function setLang(l){
   document.documentElement.lang = LANG==='zh' ? 'zh-Hant' : 'en';
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
-  const b = document.getElementById('langbtn'); if(b) b.textContent = LANG==='zh' ? 'EN' : '繁中';
+  const b = document.getElementById('langbtn'); if(b) b.textContent = LANG==='zh' ? 'EN' : '中';
   if (typeof onLangChange === 'function') onLangChange();
   if (typeof renderDynamic === 'function') renderDynamic();
 }
 function adSlot(){
-  return `<div class="ad-slot"><span data-i18n="ad_label">${t('ad_label')}</span></div>
+  return `<div class="ad-slot"><span data-i18n="house_ad_label">${t('house_ad_label')}</span>&nbsp;<a href="https://hedgewizs.github.io/thecasinocruiser/" target="_blank" rel="noopener" data-i18n="house_ad_text" style="letter-spacing:normal;font-size:.95rem">${t('house_ad_text')}</a></div>
   <!-- AdSense: paste responsive ad unit code inside .ad-slot above; keep the label -->`;
 }
 function disclosure(){
@@ -73,7 +77,7 @@ function navHTML(active){
   return `<header class="site"><nav class="nav">
     <a class="brand" href="index.html">🎲 Craps Lab <small>dice math, honestly</small></a>
     ${L.map(([h,k])=>`<a class="nl${active===h?' active':''}" href="${h}" data-i18n="${k}">${t(k)}</a>`).join('')}
-    <button class="langbtn" id="langbtn" onclick="setLang(LANG==='zh'?'en':'zh')">${LANG==='zh'?'EN':'繁中'}</button>
+    <button class="langbtn" id="langbtn" onclick="setLang(LANG==='zh'?'en':'zh')">${LANG==='zh'?'EN':'中'}</button>
   </nav></header>`;
 }
 function footerHTML(){
