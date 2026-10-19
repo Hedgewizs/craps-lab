@@ -6,8 +6,72 @@
 <title>Craps Lab — Full-Table Simulator</title>
 <meta name="description" content="Interactive craps simulator: every bet on a modern table including crapless, working/off toggles, strategy presets, bankroll chart. Free, bilingual.">
 <link rel="stylesheet" href="styles.css">
+<style>
+/* ---------- interactive craps table ---------- */
+.ct-wrap{margin:18px 0}
+.ct-chipbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.ct-chipbar-label{color:var(--gold);font-weight:700;font-size:.9rem}
+.ct-chipbtn{background:var(--card);border:2px solid var(--line);color:var(--cream);border-radius:999px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:.95rem}
+.ct-chipbtn:hover{border-color:var(--gold)}
+.ct-chipbtn.active{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.ct-custom{background:#0a3529;border:1px solid var(--line);color:var(--cream);border-radius:8px;padding:8px 10px;width:110px;font-size:.95rem}
+.ct-felt{background:radial-gradient(ellipse at 50% 20%,#0e5c40,#07271e 80%);border:3px solid #6b4f1d;border-radius:18px;padding:14px;user-select:none}
+.ct-place-row{display:grid;gap:8px;margin-bottom:8px;grid-template-columns:repeat(6,1fr)}
+.ct-hard-row{display:grid;gap:8px;margin-bottom:8px;grid-template-columns:repeat(5,1fr)}
+.ct-props-row{display:grid;gap:8px;margin-bottom:8px;grid-template-columns:repeat(5,1fr)}
+.ct-big-row{display:grid;gap:8px;grid-template-columns:1fr 1fr}
+.ct-zone{position:relative;border:1px dashed rgba(212,175,55,.55);border-radius:10px;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:8px 4px;background:rgba(0,0,0,.18);text-align:center;transition:background .15s}
+.ct-zone:hover{background:rgba(212,175,55,.22)}
+.ct-zone.has-bet{border-style:solid;border-color:var(--gold);background:rgba(212,175,55,.12)}
+.ct-zone.is-point{border:2px solid var(--gold);box-shadow:0 0 14px rgba(212,175,55,.5)}
+.ct-zlabel{color:var(--cream);font-weight:800;font-size:.82rem;letter-spacing:.5px;pointer-events:none}
+.ct-sub{color:var(--cream-dim);font-size:.68rem;pointer-events:none}
+.ct-odds{color:var(--gold-dim);font-size:.68rem;pointer-events:none}
+.ct-num{min-height:76px}
+.ct-num .ct-zlabel{font-size:1.5rem;color:var(--gold)}
+.ct-come{min-height:84px;border-width:2px}
+.ct-come .ct-zlabel{font-size:1.3rem}
+.ct-field .ct-zlabel{font-size:1.1rem;letter-spacing:2px}
+.ct-pass{border:3px solid rgba(212,175,55,.7);border-radius:0 0 90px 90px;min-height:72px}
+.ct-pass .ct-zlabel{font-size:1.05rem;letter-spacing:3px}
+.ct-dontpass,.ct-dontcome{min-height:44px}
+.ct-dontpass .ct-zlabel,.ct-dontcome .ct-zlabel{font-size:.72rem;color:var(--cream-dim)}
+.ct-big{min-height:56px}
+.ct-chips{position:absolute;top:4px;right:6px;display:flex;align-items:center;pointer-events:none}
+.ct-chip{width:22px;height:22px;border-radius:50%;border:2px dashed #fff;margin-left:-10px;box-shadow:0 2px 4px rgba(0,0,0,.5)}
+.ct-chip.c0{background:#e05252}.ct-chip.c1{background:#5aa9e6}.ct-chip.c2{background:#4caf7d}.ct-chip.c3{background:#1a1a1a}
+.ct-amt{background:var(--gold);color:#1a1a1a;font-size:.68rem;font-weight:800;border-radius:999px;padding:1px 8px;margin-left:4px}
+.ct-puck{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;font-weight:800;font-size:.8rem}
+.ct-puck.on{background:#f5f0e1;color:#1a1a1a;border:3px solid #1a1a1a}
+.ct-puck.off{background:#1a1a1a;color:var(--cream-dim);border:3px solid var(--cream-dim)}
+.ct-puckslot{display:flex;justify-content:center;margin-top:4px;min-height:46px;align-items:center;pointer-events:none}
+.ct-puckbox{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px dashed rgba(212,175,55,.35);border-radius:10px;min-height:64px}
+.ct-hopctl{display:flex;gap:4px;margin-top:4px;pointer-events:auto}
+.ct-hopctl select{background:#0a3529;border:1px solid var(--line);color:var(--cream);border-radius:6px;padding:4px;font-size:.85rem}
+.ct-hopgo{background:var(--gold);border:none;border-radius:6px;padding:4px 10px;font-weight:800;cursor:pointer}
+.ct-hopzone{cursor:default}
+/* roll history */
+.ct-histwrap{margin-top:14px}
+.ct-histhead{color:var(--gold);font-weight:700;margin-bottom:8px;font-size:.95rem}
+.ct-history{display:flex;gap:8px;overflow-x:auto;padding:10px;background:#04150f;border:1px solid var(--line);border-radius:10px;min-height:76px}
+.ct-roll{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:8px;padding:6px 8px}
+.ct-roll.made{border-color:var(--green);box-shadow:0 0 8px rgba(76,175,125,.4)}
+.ct-roll.sevenout{border-color:var(--red);box-shadow:0 0 8px rgba(224,82,82,.4)}
+.ct-roll-dice{display:flex;gap:2px}
+.ct-minidie{width:22px;height:22px;background:var(--cream);border-radius:4px}
+.ct-roll-total{font-weight:800;color:var(--gold);font-size:.85rem;margin-top:2px}
+.ct-handstats{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:.9rem;color:var(--cream-dim)}
+.ct-handstats b{color:var(--gold)}
+@media(max-width:640px){
+  .ct-place-row{grid-template-columns:repeat(3,1fr)}
+  .ct-hard-row{grid-template-columns:repeat(3,1fr)}
+  .ct-props-row{grid-template-columns:repeat(3,1fr)}
+  .ct-num{min-height:64px}
+}
+</style>
 <script src="i18n.js"></script>
 <script src="craps-engine.js"></script>
+<script src="table.js"></script>
 <script>
 Object.assign(I18N.en,{
   sim_title:"Full-Table Simulator", sim_intro:"Every bet on a modern layout — place them yourself or load a strategy preset, then roll. The dice are two independent d6; the math is the real math.",
@@ -58,6 +122,7 @@ function newSession(){
   eng.startBankroll = eng.bankroll;
   stratMem = {};
   equity = [eng.bankroll];
+  if(typeof ctResetStats==='function') ctResetStats();
   document.getElementById('log').innerHTML='';
   document.getElementById('preset').value='manual';
   stopAuto();
@@ -81,6 +146,7 @@ function doRoll(){
   const r = ev.find(e=>e.t==='roll');
   equity.push(eng.bankroll);
   if(equity.length>400) equity.shift();
+  if(typeof ctRecordRoll==='function') ctRecordRoll(ev);
   renderAll(r);
   const goal=+document.getElementById('s_goal').value||0;
   const stop=+document.getElementById('s_stop').value||0;
@@ -143,6 +209,8 @@ function renderAll(lastRoll){
       <td>${['place','buy','hardway'].includes(b.type)?`<button class="btn small ghost" onclick="toggleWork(${b.id})">${b.working?t('working'):t('off')}</button>`:''}</td>
       <td><button class="btn small ghost" onclick="takeDown(${b.id})">${t('take_down')}</button></td></tr>`).join('')+'</table>';
   drawChart();
+  if(typeof renderTable==='function') renderTable();
+  if(typeof renderHistory==='function') renderHistory();
 }
 function drawChart(){
   const c=document.getElementById('chart'); if(!c||equity.length<2) return;
@@ -198,7 +266,7 @@ function buildBetButtons(){
   c.innerHTML=h;
 }
 function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
-function onLangChange(){ buildBetButtons(); buildPresets(); if(eng) renderAll(); }
+function onLangChange(){ buildBetButtons(); buildPresets(); if(typeof buildTable==='function') buildTable(); if(eng) renderAll(); }
 function buildPresets(){
   const s=document.getElementById('preset');
   s.innerHTML=`<option value="manual">${t('preset_manual')}</option>`+
@@ -247,6 +315,7 @@ function buildPresets(){
   <div id="betbtns"></div>
 </div>
 <div>
+  <div id="crapstable"></div>
   <div class="card center">
     <div id="phase" class="big" style="margin-bottom:6px"></div>
     <div class="dice" id="dice"></div>
@@ -267,6 +336,6 @@ function buildPresets(){
 </div>
 <script>document.write(adSlot());</script>
 <script>document.write(footerHTML());</script>
-<script>buildBetButtons();buildPresets();newSession();</script>
+<script>buildBetButtons();buildPresets();buildTable();newSession();</script>
 </body>
 </html>
