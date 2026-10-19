@@ -23,6 +23,8 @@ en:{
   house_ad_text:"🚢 The Casino Cruiser — cruise free on casino comps",
   disclosure:"Craps Lab is a free educational simulator. No real money is wagered here. Every strategy on this site loses to the house edge in the long run — the math is shown honestly so you can see it for yourself.",
   footer_by:"Built for players who want the truth about the math.",
+  nl_title:"📬 iamthecasino.com — the letter",
+  nl_desc:"Weekly: one options trade idea with the math, one casino truth, one comp-cruise deal. Free forever. Unsubscribe anytime.",
   start:"Start", stop:"Stop", reset:"Reset", run:"Run",
   sessions:"sessions", results:"Results",
 },
@@ -46,6 +48,8 @@ zh:{
   house_ad_text:"🚢 The Casino Cruiser —— 賭場回饋免費郵輪",
   disclosure:"Craps Lab 是免費教育模擬器，不涉及真錢投注。本站所有策略長期都輸給莊家優勢——數學誠實呈現，讓你自己看見。",
   footer_by:"為想看清數學真相的玩家而建。",
+  nl_title:"📬 成為莊家——電子報",
+  nl_desc:"每週：一筆附數學的交易想法、一個賭場真相、一個郵輪優惠。永久免費，隨時退訂。",
   start:"開始", stop:"停止", reset:"重設", run:"執行",
   sessions:"次模擬", results:"結果",
 }};
@@ -80,8 +84,15 @@ function navHTML(active){
     <button class="langbtn" id="langbtn" onclick="setLang(LANG==='zh'?'en':'zh')">${LANG==='zh'?'EN':'中'}</button>
   </nav></header>`;
 }
+function newsletterHTML(){
+  return `<div class="wrap"><section class="block" style="margin-bottom:8px"><div class="card" style="text-align:center;border:1px solid var(--gold)">
+    <h3 style="color:var(--gold);margin-top:0">${t('nl_title')}</h3>
+    <p class="muted">${t('nl_desc')}</p>
+    <div style="max-width:480px;margin:0 auto"><iframe src="https://iamthecasinocombethehouse.substack.com/embed" width="480" height="320" style="border:1px solid #EEE;background:#fff;max-width:100%;border-radius:8px" frameborder="0" scrolling="no" title="Subscribe"></iframe></div>
+  </div></section></div>`;
+}
 function footerHTML(){
-  return `<footer class="site"><div class="wrap">
+  return newsletterHTML()+`<footer class="site"><div class="wrap">
     <p data-i18n="footer_by">${t('footer_by')}</p>
     <p class="muted" style="font-size:.78rem">Craps Lab · ${t('disclosure')}</p>
   </div></footer>
