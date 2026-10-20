@@ -265,7 +265,7 @@ function buildBetButtons(){
   h+='</div>';
   c.innerHTML=h;
 }
-function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
+function sname(k){ const n=STRATEGIES[k].name; return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
 function onLangChange(){ buildBetButtons(); buildPresets(); if(typeof buildTable==='function') buildTable(); if(eng) renderAll(); }
 function buildPresets(){
   const s=document.getElementById('preset');
