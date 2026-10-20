@@ -21,7 +21,7 @@ Object.assign(I18N.en,{
   rolls_hr:"Rolls / hour", add_bet:"Add bet", hour_run:"Estimate",
   bet_type:"Bet", amount:"Amount $", per_hour:"Decisions / hour",
   hour_cost:"Expected hourly cost",
-  hour_note:"Assumes ~100 rolls/hour at a full table. One-roll bets resolve every roll; place bets average ~3 decisions/hour per number; line bets ~30 decisions/hour.",
+  hour_note:"Craps is a slow game — a full table runs about 40–60 rolls/hour (default 50). One-roll bets resolve every roll; place bets average ~3 decisions per 100 rolls per number; line bets ~30 per 100 rolls.",
 });
 Object.assign(I18N.zh,{
   calc_title:"計算機",
@@ -35,7 +35,7 @@ Object.assign(I18N.zh,{
   rolls_hr:"每小時擲骰", add_bet:"新增注碼", hour_run:"估算",
   bet_type:"注種", amount:"金額 $", per_hour:"每小時結算",
   hour_cost:"預期每小時花費",
-  hour_note:"滿桌約每小時 100 擲。單擲注每擲結算；置注每號碼每小時約 3 次結算；線注每小時約 30 次結算。",
+  hour_note:"花旗骰節奏慢——滿桌每小時約 40–60 擲（預設 50）。單擲注每擲結算；置注每 100 擲每號碼約 3 次結算；線注每 100 擲約 30 次結算。",
 });
 const EDGE_MAP = {
   pass:0.0141, dontpass:0.0136, come:0.0141,
@@ -149,7 +149,7 @@ function onLangChange(){
 <div class="card">
   <h2 class="sec" data-i18n="hour_h">Cost of an Hour</h2>
   <p data-i18n="hour_d"></p>
-  <div class="rowflex"><label class="f"><span data-i18n="rolls_hr">Rolls / hour</span><br><input type="number" id="h_rolls" value="100" style="width:110px"></label>
+  <div class="rowflex"><label class="f"><span data-i18n="rolls_hr">Rolls / hour</span><br><input type="number" id="h_rolls" value="50" style="width:110px"></label>
   <button class="btn small ghost" onclick="addHourRow()" data-i18n="add_bet">Add bet</button>
   <button class="btn small" onclick="runHour()" data-i18n="hour_run">Estimate</button></div>
   <div id="hour_rows" class="mt"></div>
