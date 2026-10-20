@@ -200,7 +200,7 @@ function renderAll(lastRoll){
     `<div class="stat"><div class="v">$${eng.bankroll.toFixed(0)}</div><div class="l">${t('bankroll_now')}</div></div>
      <div class="stat"><div class="v ${pl>=0?'pos':'neg'}">${pl>=0?'+':''}$${pl.toFixed(0)}</div><div class="l">P&amp;L</div></div>
      <div class="stat"><div class="v">${eng.decisions}</div><div class="l">${t('decisions')}</div></div>
-     <div class="stat"><div class="v neg">-$${eng.theoretical.toFixed(0)}</div><div class="l">${t('theo_loss')}</div></div>`;
+     <div class="stat"><div class="v neg">-$${eng.theoretical.toFixed(2)}</div><div class="l">${t('theo_loss')}</div></div>`;
   // bets
   const bl=document.getElementById('betlist');
   if(!eng.bets.length) bl.innerHTML='<p class="muted">'+t('no_bets')+'</p>';
