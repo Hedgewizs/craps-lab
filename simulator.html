@@ -10,7 +10,7 @@
 /* ---------- interactive craps table (wide single-end, Crapsee-style) ---------- */
 .sim-wide{width:100vw;margin-left:calc(50% - 50vw);padding:0 14px;box-sizing:border-box}
 body{overflow-x:clip}
-.sim-controlbar{position:sticky;top:10px;z-index:60;margin:0 0 14px;padding:12px 16px;box-shadow:0 10px 26px rgba(0,0,0,.55)}
+.sim-controlbar{position:sticky;bottom:10px;z-index:60;margin:14px 0 0;padding:12px 16px;box-shadow:0 -6px 26px rgba(0,0,0,.55),0 10px 26px rgba(0,0,0,.55)}
 .sim-ctl-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;width:100%}
 .sim-ctl-left{min-width:180px}
 .sim-ctl-btns{display:flex;gap:10px;align-items:center}
@@ -121,7 +121,7 @@ body{overflow-x:clip}
   .ct-botrow{grid-template-columns:1fr}
   .ct-num .ct-zlabel{font-size:1.3rem}
   .sim-controlbar .stat-grid{grid-template-columns:repeat(2,1fr)}
-  .sim-controlbar{top:6px;padding:10px 12px}
+  .sim-controlbar{bottom:6px;padding:10px 12px}
   .sim-ctl-left{min-width:0}
 }
 </style>
@@ -340,6 +340,7 @@ function buildPresets(){
 <h1 style="color:var(--gold)" data-i18n="sim_title">Full-Table Simulator</h1>
 <p data-i18n="sim_intro"></p>
 <div class="sim-wide">
+  <div id="crapstable"></div>
   <div class="card sim-controlbar">
     <div class="sim-ctl-row">
       <div class="sim-ctl-left"><div id="phase" class="big"></div><div id="total" class="muted"></div></div>
@@ -349,7 +350,6 @@ function buildPresets(){
     </div>
     <div class="stat-grid" id="bank"></div>
   </div>
-  <div id="crapstable"></div>
 </div>
 <div class="grid cols2">
 <div>
