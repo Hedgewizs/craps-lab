@@ -180,7 +180,6 @@ function newSession(){
   equity = [eng.bankroll];
   if(typeof ctResetStats==='function') ctResetStats();
   document.getElementById('log').innerHTML='';
-  document.getElementById('preset').value='manual';
   stopAuto();
   renderAll();
   log('Session started: $'+eng.bankroll+' bankroll.');
