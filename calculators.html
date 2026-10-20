@@ -63,13 +63,13 @@ function runGoalCalc(){
     const N=2000, res=[]; let hit=0, bust=0;
     const seedBase=(Math.random()*1e9)|0;
     for(let i=0;i<N;i++){
-      const eng=new CrapsEngine({seed:seedBase+i, bankroll:bank, tableMin:5, tableMax:10000,
-        oddsMax:document.getElementById('g_odds').value, crapless:document.getElementById('g_crapless').checked});
-      runSession(eng, STRATEGIES[strat], {winGoal:goal, maxRolls:600});
-      const pl=eng.bankroll-bank;
+      const r = runSession({seed:seedBase+i, bankroll:bank, tableMin:5, tableMax:10000,
+        oddsMax:document.getElementById('g_odds').value, crapless:document.getElementById('g_crapless').checked},
+        strat, {winGoal:goal, maxRolls:600});
+      const pl=r.profit;
       res.push(pl);
-      if(pl>=goal) hit++;
-      if(eng.bankroll<=0) bust++;
+      if(r.hitGoal) hit++;
+      if(r.ruin) bust++;
     }
     res.sort((a,b)=>a-b);
     const mean=res.reduce((a,b)=>a+b,0)/N, med=res[Math.floor(N/2)];

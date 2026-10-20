@@ -657,13 +657,11 @@ ironcross: {
   desc:{en:'Place 5/6/8 + field after the come-out. Wins on every roll except 7 — which wipes the whole layout 16.7% of the time.', zh:'開骰後置注 5/6/8 + field。除了 7 每擲都贏——但 7 有 16.7% 機率一次清檯。'},
   fn(eng, mem){
     if(eng.phase!=='point') return;
-    if(mem.done) return;
     try{
-      eng.placeBet('place',{amount:10, number:5});
-      eng.placeBet('place',{amount:12, number:6});
-      eng.placeBet('place',{amount:12, number:8});
-      eng.placeBet('field',{amount:10});
-      mem.done=true;
+      if(!eng.hasBet('place',5)) eng.placeBet('place',{amount:10, number:5});
+      if(!eng.hasBet('place',6)) eng.placeBet('place',{amount:12, number:6});
+      if(!eng.hasBet('place',8)) eng.placeBet('place',{amount:12, number:8});
+      if(!eng.hasBet('field')) eng.placeBet('field',{amount:10});
     }catch(e){}
   }
 },
@@ -897,6 +895,19 @@ function runBatchTracked(engineOpts, strategyId, n, sessOpts, onProgress){
     meanRolls:Math.round(totRolls/n), totalAction:Math.round(totAction*100)/100,
     theoreticalLoss:Math.round(totTheo*100)/100};
 }
+
+/* Dispatcher: pages may pass a strategy key ('molly'), a STRATEGIES entry
+   ({name, desc, fn}), or a bare function. Normalizes to the right runner and
+   RETURNS the session result — callers must use the return value. */
+const _plainRunSession = runSession;
+runSession = function(engineOpts, strategy, sessOpts){
+  if(typeof strategy==='string') return runSessionTracked(engineOpts, strategy, sessOpts);
+  const fn = typeof strategy==='function' ? strategy : (strategy && strategy.fn);
+  if(typeof fn!=='function') throw new Error('runSession: strategy has no fn');
+  const key = Object.keys(STRATEGIES).find(k=>STRATEGIES[k]===strategy || STRATEGIES[k].fn===fn);
+  if(key==='martingale') return runSessionTracked(engineOpts, 'martingale', sessOpts);
+  return _plainRunSession(engineOpts, fn, sessOpts);
+};
 
 if(typeof module!=='undefined' && module.exports){
   module.exports = {mulberry32, rollDice, CrapsEngine, runSession:runSessionTracked,

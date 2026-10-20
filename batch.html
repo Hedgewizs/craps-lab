@@ -53,9 +53,8 @@ function runBatch(){
   function chunk(){
     const end=Math.min(i+CH,n);
     for(;i<end;i++){
-      const eng=new CrapsEngine(Object.assign({seed:seedBase+i},cfg));
-      runSession(eng,STRATEGIES[strat],cfg);
-      results.push(eng.bankroll-cfg.bankroll);
+      const r=runSession(Object.assign({seed:seedBase+i},cfg), strat, cfg);
+      results.push(r.profit);
     }
     document.getElementById('results').innerHTML=`<p class="muted">${t('running')} ${i}/${n}</p><div class="bar"><i style="width:${(i/n*100).toFixed(1)}%"></i></div>`;
     if(i<n) setTimeout(chunk,0);
