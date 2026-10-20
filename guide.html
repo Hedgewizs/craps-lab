@@ -10,18 +10,77 @@
 <script src="content-a.js"></script>
 <script src="content-b.js"></script>
 <script src="dealer-content.js"></script>
+<script src="craps-engine.js"></script>
 <script>
 if (typeof DEALER_GUIDE !== "undefined") GUIDES.push(DEALER_GUIDE);
 Object.assign(I18N.en,{
   guide_title:"Strategy Guide", guide_intro:"Ten chapters, one honest theme: every bet has a price, and the price is printed below. Read in order, or jump to what you play.",
   glossary_h:"Glossary", glossary_d:"25 terms, EN + 中.",
   mathbox_h:"The math", verdict_h:"The verdict",
+  strat_tab:"Strategy Reference", strat_intro:"Every preset in the Simulator, Batch Lab and Calculators, spelled out: the exact bets, the exact amounts, and what it costs you. Amounts below are what the preset actually places.",
+  strat_how:"How it plays", strat_risk:"Money at risk", strat_math:"The math", strat_try:"▶ Test it in the simulator",
 });
 Object.assign(I18N.zh,{
   guide_title:"策略指南", guide_intro:"十個章節，一個誠實的主題：每種注都有價格，價格就印在下面。按順序讀，或直接跳到你玩的部分。",
   glossary_h:"術語表", glossary_d:"25 個術語，中英對照。",
   mathbox_h:"數學", verdict_h:"結論",
+  strat_tab:"策略詳解", strat_intro:"模擬器、Batch Lab 與計算機裡的每個預設策略，完整說明：確切的注、確切的金額、以及代價。以下金額就是預設實際下的注。",
+  strat_how:"玩法", strat_risk:"風險金額", strat_math:"數學", strat_try:"▶ 在模擬器中測試",
 });
+const STRAT_DET = {
+flat10:{how:{en:"<b>Come-out:</b> $10 on the pass line, every time. That's it — no odds, no pressing, no hedging. After the point resolves, bet again.",
+  zh:"<b>開骰：</b>每次 $10 過關線。就這樣——不加賠率、不加注、不對沖。點數結算後再下一次。"},
+  risk:{en:"$10 at risk per decision.", zh:"每次結算風險 $10。"},
+  math:{en:"1.41% house edge. A $10 bettor loses about 14¢ per decision — roughly $4/hour at a full table.", zh:"莊家優勢 1.41%。$10 玩家每次結算約輸 14 美分——滿桌每小時約輸 $4。"}},
+molly:{how:{en:"<b>Come-out:</b> $10 on pass. <b>Point on:</b> put max 3-4-5x odds behind the line ($30 on 4/10, $40 on 5/9, $50 on 6/8), then place up to two $10 come bets and back each with the same 3-4-5x odds as they travel to a number.",
+  zh:"<b>開骰：</b>$10 過關線。<b>點數成立：</b>線後加 3-4-5x 滿賠率（4/10 加 $30、5/9 加 $40、6/8 加 $50），再下最多兩個 $10 來注，走到號碼後同樣加滿賠率。"},
+  risk:{en:"Up to $10 line + $50 odds + 2 × ($10 come + $50 odds) = $170 working.", zh:"最多 $10 線注 + $50 賠率 + 2 ×（$10 來注 + $50 賠率）= 檯上 $170。"},
+  math:{en:"The odds bets pay at true odds (0% edge), so the combined edge drops to ~0.5% of total action — the lowest of any multi-bet system.", zh:"賠率注是真賠率（0% 優勢），所以整體優勢降到約 0.5%——所有多注系統中最低。"}},
+ironcross:{how:{en:"Wait for the point. Then place <b>$10 on 5, $12 on 6, $12 on 8</b> and <b>$10 on the field</b>. Every number except 7 pays something; a 7 wipes the whole $44.",
+  zh:"等點數成立。然後 <b>$10 置 5、$12 置 6、$12 置 8</b>，加 <b>$10 field</b>。除了 7 每個號碼都贏；7 一出 $44 全滅。"},
+  risk:{en:"$44 on the layout every point cycle.", zh:"每個點數週期檯上 $44。"},
+  math:{en:"Wins ~83% of rolls but the 7 costs the full $44. Weighted edge ≈ 2.5–3% of action — a slow bleed disguised as constant wins.", zh:"約 83% 的擲骰都贏，但 7 出現就賠整組 $44。加權優勢約 2.5–3%——用不斷的小贏掩蓋緩慢失血。"}},
+martingale:{how:{en:"$10 on pass. Lose → double the next pass bet ($20, $40, $80…). Win → back to $10. Stops only when the bankroll or table max breaks the chain.",
+  zh:"$10 過關線。輸 → 下一把加倍（$20、$40、$80……）。贏 → 回到 $10。只有賭本或桌限能打斷纜。"},
+  risk:{en:"Grows exponentially: 6 losses in a row demands a $640 bet to chase a $10 profit.", zh:"指數增長：連輸 6 次就要下 $640 去追 $10 的利潤。"},
+  math:{en:"Same 1.41% edge as flat pass — the doubling only changes the shape of results: frequent small wins, rare catastrophic losses.", zh:"和 $10 平注一樣的 1.41% 優勢——加倍只改變結果形狀：頻繁的小贏、罕見的災難性大輸。"}},
+arnold:{how:{en:"<b>Come-out:</b> $10 pass. <b>Point on:</b> put <b>$40 don't come</b>, then a <b>$10 come</b> bet. If the don't come falls, it's re-placed.",
+  zh:"<b>開骰：</b>$10 過關線。<b>點數成立：</b>下 <b>$40 不來注</b>，再下 <b>$10 來注</b>。不來注輸了會重下。"},
+  risk:{en:"$60 working per point cycle.", zh:"每個點數週期檯上 $60。"},
+  math:{en:"Hedging two line bets doesn't cancel the edge — it doubles your exposure to it (~2.8% of action). The 'clever' feel is an illusion.", zh:"對沖兩條線並不會抵消優勢——只是讓你承受雙倍的莊家優勢（約 2.8%）。「聰明」的感覺是錯覺。"}},
+cover4press:{how:{en:"<b>Point on:</b> place <b>$10 on 5, $10 on 9, $12 on 6, $12 on 8</b>. Every time one of these numbers hits, <b>press that number up one unit</b> ($5 on 5/9, $6 on 6/8) instead of collecting.",
+  zh:"<b>點數成立：</b><b>$10 置 5、$10 置 9、$12 置 6、$12 置 8</b>。每中一次就把該號碼<b>加注一單位</b>（5/9 加 $5、6/8 加 $6），不收錢。"},
+  risk:{en:"$44 to start; grows as it wins. A seven-out wipes whatever's working.", zh:"起始 $44，贏了會越滾越大。七出時檯上多少賠多少。"},
+  math:{en:"Same ~2.7% edge on place bets as flat; pressing adds variance, not edge — bigger swings around the same expected loss.", zh:"置注優勢和和局一樣約 2.7%；加注只放大波動，不改變優勢——期望損失相同，起伏更大。"}},
+cover4collect:{how:{en:"Same $10/$10/$12/$12 inside setup as press, but <b>pocket every win</b> — never press.",
+  zh:"和加注版一樣的 $10/$10/$12/$12 內圍開局，但<b>每次中獎都收下</b>——絕不加注。"},
+  risk:{en:"$44 fixed on the layout per cycle; profits leave the table as they're won.", zh:"每周期固定 $44 在檯上；贏的錢直接離檯。"},
+  math:{en:"Same edge as press (~2.7% on place action); collecting is simply the lower-variance twin.", zh:"和加注版一樣的優勢（約 2.7%）；收注版只是波動較小的雙胞胎。"}},
+oneThreeTwoFive:{how:{en:"Pass line only. Bet <b>1 unit ($10)</b> → win → <b>3 units ($30)</b> → win → <b>2 units ($20)</b> → win → <b>5 units ($50)</b>. Any loss or a completed run resets to $10.",
+  zh:"只玩過關線。<b>1 單位（$10）</b> → 贏 → <b>3 單位（$30）</b> → 贏 → <b>2 單位（$20）</b> → 贏 → <b>5 單位（$50）</b>。輸一次或走完就回到 $10。"},
+  risk:{en:"Max $50 on the line during a streak; 4 straight wins nets +$120 on $10 risked.", zh:"連贏時線上最多 $50；連贏 4 次用 $10 本金賺 +$120。"},
+  math:{en:"Positive progression riding wins; edge stays 1.41% — it redistributes outcomes toward streak-dependent jackpots and slow grinds.", zh:"正向纜搭順風車；優勢維持 1.41%——只是把結果重分配成靠連贏的大獎和緩慢的磨損。"}},
+dpLayHedge:{how:{en:"<b>Come-out:</b> $30 don't pass. <b>Point on:</b> place <b>$15 on 4 and $15 on 10</b>; if the point is 5/6/8/9, add a <b>$30 lay</b> against it. The first 4/10 hit pays $27 → take the places AND the lay down and freeroll the don't pass.",
+  zh:"<b>開骰：</b>$30 不過關。<b>點數成立：</b><b>$15 置 4、$15 置 10</b>；點數是 5/6/8/9 就再加 <b>$30 放注</b>對沖。4/10 先中就付 $27 → 把置注和放注全收下，不不過關進入 freeroll。"},
+  risk:{en:"$60+ working at setup; if the point repeats before 4/10 hits, it's -$60.", zh:"開局檯上 $60+；4/10 先中之前點數重現就是 -$60。"},
+  math:{en:"Engineered so the common case (4/10 lands first) feels free — but the point-repeats case costs more than the freerolls earn. Net edge ~2%.", zh:"設計讓常見情況（4/10 先中）感覺免費——但點數重現的代價超過 freeroll 的收益。淨優勢約 2%。"}},
+inside110:{how:{en:"<b>Point on:</b> place <b>$25 on 5, $25 on 9, $30 on 6, $30 on 8</b> ($110 inside). The <b>first hit pays $35 → regress everything to $22 across</b> ($5/$5/$6/$6), locking +$13. Ride the rest.",
+  zh:"<b>點數成立：</b><b>$25 置 5、$25 置 9、$30 置 6、$30 置 8</b>（內圍 $110）。<b>第一擊付 $35 → 全部回歸到 $22</b>（$5/$5/$6/$6），鎖定 +$13。之後 freeroll。"},
+  risk:{en:"$110 at risk until the first hit; $22 after regression.", zh:"第一擊之前風險 $110；回歸後只剩 $22。"},
+  math:{en:"Regression cuts exposure fast — the system's virtue. Still ~2.7% on place action; the +$13 lock is real, the seven-out on the first two rolls still hurts.", zh:"回歸快速降低曝險——這就是這套系統的優點。置注優勢仍約 2.7%；+$13 鎖定是真的，但前兩擲就七出一樣痛。"}},
+reg68_24:{how:{en:"<b>Point on:</b> <b>$12 on 6 and $12 on 8</b>. First hit pays $14 → <b>drop both to $6</b> and leave them. +$2 locked on $24 risked.",
+  zh:"<b>點數成立：</b><b>6 和 8 各 $12</b>。第一擊付 $14 → <b>降到各 $6</b> 留著。$24 風險鎖定 +$2。"},
+  risk:{en:"$24 at risk, dropping to $12 after the first hit.", zh:"風險 $24，第一擊後降到 $12。"},
+  math:{en:"Minimalist regression on the two lowest-edge place numbers (1.52%). One of the cheapest ways to have action on every roll.", zh:"在兩個優勢最低的置注號碼（1.52%）上做最小回歸。想每擲都有戲看的最便宜方案之一。"}},
+inside22:{how:{en:"<b>Point on:</b> <b>$5 on 5, $5 on 9, $6 on 6, $6 on 8</b> ($22 inside). Take down the <b>first two hits</b> outright — no pressing — and leave ~$10 working.",
+  zh:"<b>點數成立：</b><b>$5 置 5、$5 置 9、$6 置 6、$6 置 8</b>（內圍 $22）。<b>前兩擊直接全收</b>——不加注——檯上留約 $10。"},
+  risk:{en:"$22 total; about +$4 banked after two hits with $10 still working.", zh:"總共 $22；兩擊後約收 +$4，檯上還留 $10。"},
+  math:{en:"A tiny two-step hit-and-run. Edge ~2.7% on what's working; the structure just limits how long you pay it.", zh:"微型兩步打帶跑。檯上注的優勢約 2.7%；這結構只是限制你付優勢的時間。"}},
+reno12:{how:{en:"<b>Point on:</b> <b>$6 on 6 and $6 on 8</b>. First hit → <b>take both down completely</b> and wait for the hand to end. The simplest one-hit system there is.",
+  zh:"<b>點數成立：</b><b>6 和 8 各 $6</b>。第一擊 → <b>全部收下</b>，等這輪結束。最簡單的一擊系統。"},
+  risk:{en:"$12 max per hand, usually far less.", zh:"每輪最多 $12，通常遠低於此。"},
+  math:{en:"One-hit-and-out on 1.52%-edge numbers. You pay the edge for about one roll per hand — hard to do cheaper with action on the felt.", zh:"在 1.52% 優勢的號碼上一擊就走。每輪約只付一次擲骰的優勢——想在檯上有注又這麼便宜很難。"}},
+};
 let guideTab = 'basics';
 function pickLang(o){ return (LANG==='zh'?o.zh:o.en) || o.en; }
 function renderGuide(){
@@ -29,7 +88,18 @@ function renderGuide(){
   const pane = document.getElementById('gpane');
   tabs.innerHTML = GUIDES.map(g=>
     `<button class="tab${g.id===guideTab?' active':''}" onclick="guideTab='${g.id}';renderGuide()">${g.icon} ${pickLang(g.title).split(':')[0]}</button>`
-  ).join('') + `<button class="tab${guideTab==='glossary'?' active':''}" onclick="guideTab='glossary';renderGuide()">📖 ${t('glossary_h')}</button>`;
+  ).join('') + `<button class="tab${guideTab==='strategies'?' active':''}" onclick="guideTab='strategies';renderGuide()">🎯 ${t('strat_tab')}</button>` + `<button class="tab${guideTab==='glossary'?' active':''}" onclick="guideTab='glossary';renderGuide()">📖 ${t('glossary_h')}</button>`;
+  if(guideTab==='strategies'){
+    pane.innerHTML = `<p class="big">${t('strat_intro')}</p>` +
+      Object.keys(STRATEGIES).map(k=>{ const d=STRAT_DET[k]; if(!d) return '';
+        return `<div class="card"><h3 style="color:var(--gold);margin-top:0">${pickLang(STRATEGIES[k].name)}</h3>
+        <p>${pickLang(STRATEGIES[k].desc)}</p>
+        <p><b>${t('strat_how')}:</b> ${pickLang(d.how)}</p>
+        <p><b>${t('strat_risk')}:</b> ${pickLang(d.risk)}</p>
+        <p><b>🧮 ${t('strat_math')}:</b> ${pickLang(d.math)}</p>
+        <a class="btn small" href="simulator.html">${t('strat_try')}</a></div>`; }).join('');
+    return;
+  }
   if(guideTab==='glossary'){
     pane.innerHTML = `<p class="muted">${t('glossary_d')}</p>
       <table class="data"><tr><th>EN</th><th>中</th><th></th></tr>
