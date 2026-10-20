@@ -15,11 +15,16 @@
 .ct-chipbtn:hover{border-color:var(--gold)}
 .ct-chipbtn.active{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
 .ct-custom{background:#0a3529;border:1px solid var(--line);color:var(--cream);border-radius:8px;padding:8px 10px;width:110px;font-size:.95rem}
-.ct-felt{background:radial-gradient(ellipse at 50% 20%,#0e5c40,#07271e 80%);border:3px solid #6b4f1d;border-radius:18px;padding:14px;user-select:none}
-.ct-place-row{display:grid;gap:8px;margin-bottom:8px;grid-template-columns:repeat(6,1fr)}
-.ct-hard-row{display:grid;gap:8px;margin-bottom:8px;grid-template-columns:repeat(5,1fr)}
-.ct-props-row{display:grid;gap:8px;margin-bottom:8px;grid-template-columns:repeat(5,1fr)}
-.ct-big-row{display:grid;gap:8px;grid-template-columns:1fr 1fr}
+.ct-tablescroll{overflow-x:auto;padding-bottom:6px}
+.ct-table{background:linear-gradient(160deg,#7a5a24,#4a3512 60%,#5d451a);border-radius:120px;padding:16px;min-width:900px;box-shadow:inset 0 2px 8px rgba(255,220,150,.35),inset 0 -6px 14px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.45)}
+.ct-felt{background:radial-gradient(ellipse at 50% 30%,#10714c,#07271e 85%);border:2px solid rgba(0,0,0,.45);border-radius:96px;padding:20px 22px;user-select:none;display:grid;grid-template-columns:1fr .8fr 1fr;gap:14px}
+.ct-wing{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ct-center{display:flex;flex-direction:column;gap:8px;min-width:0;justify-content:flex-start}
+.ct-place-row{display:flex;gap:6px}
+.ct-place-row .ct-num{flex:1}
+.ct-hard-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ct-props-row{display:grid;gap:6px;grid-template-columns:repeat(3,1fr)}
+.ct-mid-row{display:grid;gap:6px;grid-template-columns:1fr 1.5fr 1fr}
 .ct-zone{position:relative;border:1px dashed rgba(212,175,55,.55);border-radius:10px;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:8px 4px;background:rgba(0,0,0,.18);text-align:center;transition:background .15s}
 .ct-zone:hover{background:rgba(212,175,55,.22)}
 .ct-zone.has-bet{border-style:solid;border-color:var(--gold);background:rgba(212,175,55,.12)}
@@ -27,16 +32,19 @@
 .ct-zlabel{color:var(--cream);font-weight:800;font-size:.82rem;letter-spacing:.5px;pointer-events:none}
 .ct-sub{color:var(--cream-dim);font-size:.68rem;pointer-events:none}
 .ct-odds{color:var(--gold-dim);font-size:.68rem;pointer-events:none}
-.ct-num{min-height:76px}
-.ct-num .ct-zlabel{font-size:1.5rem;color:var(--gold)}
-.ct-come{min-height:84px;border-width:2px}
-.ct-come .ct-zlabel{font-size:1.3rem}
-.ct-field .ct-zlabel{font-size:1.1rem;letter-spacing:2px}
-.ct-pass{border:3px solid rgba(212,175,55,.7);border-radius:0 0 90px 90px;min-height:72px}
-.ct-pass .ct-zlabel{font-size:1.05rem;letter-spacing:3px}
-.ct-dontpass,.ct-dontcome{min-height:44px}
-.ct-dontpass .ct-zlabel,.ct-dontcome .ct-zlabel{font-size:.72rem;color:var(--cream-dim)}
-.ct-big{min-height:56px}
+.ct-num{min-height:70px}
+.ct-num .ct-zlabel{font-size:1.25rem;color:var(--gold)}
+.ct-come{min-height:76px;border-width:2px}
+.ct-come .ct-zlabel{font-size:1.25rem}
+.ct-field .ct-zlabel{font-size:1.05rem;letter-spacing:2px}
+.ct-pass{border:3px solid rgba(212,175,55,.7);min-height:64px}
+.ct-felt>.ct-wing:first-child .ct-pass{border-radius:10px 10px 10px 64px}
+.ct-felt>.ct-wing:last-child .ct-pass{border-radius:10px 10px 64px 10px}
+.ct-pass .ct-zlabel{font-size:1rem;letter-spacing:3px}
+.ct-dontpass,.ct-dontcome{min-height:42px}
+.ct-dontpass .ct-zlabel,.ct-dontcome .ct-zlabel{font-size:.7rem;color:var(--cream-dim)}
+.ct-big{min-height:42px}
+.ct-big .ct-zlabel{font-size:.78rem}
 .ct-chips{position:absolute;top:4px;right:6px;display:flex;align-items:center;pointer-events:none}
 .ct-chip{width:22px;height:22px;border-radius:50%;border:2px dashed #fff;margin-left:-10px;box-shadow:0 2px 4px rgba(0,0,0,.5)}
 .ct-chip.c0{background:#e05252}.ct-chip.c1{background:#5aa9e6}.ct-chip.c2{background:#4caf7d}.ct-chip.c3{background:#1a1a1a}
@@ -63,10 +71,8 @@
 .ct-handstats{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:.9rem;color:var(--cream-dim)}
 .ct-handstats b{color:var(--gold)}
 @media(max-width:640px){
-  .ct-place-row{grid-template-columns:repeat(3,1fr)}
-  .ct-hard-row{grid-template-columns:repeat(3,1fr)}
-  .ct-props-row{grid-template-columns:repeat(3,1fr)}
-  .ct-num{min-height:64px}
+  .ct-table{min-width:840px}
+  .ct-num{min-height:60px}
 }
 </style>
 <script src="i18n.js"></script>

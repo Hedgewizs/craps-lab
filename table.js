@@ -45,16 +45,47 @@ function ctPlaceNums(){
 }
 
 /* ---------- build the felt ---------- */
-function buildTable(){
-  const host = document.getElementById('crapstable');
-  if(!host) return;
-  const nums = ctPlaceNums();
+function ctWingHTML(nums){
   const placeBoxes = nums.map(n=>
     `<div class="ct-zone ct-num" data-bet="place" data-number="${n}">
        <span class="ct-zlabel">${n}</span>
        <span class="ct-puckslot" data-puckslot="${n}"></span>
        <span class="ct-chips" data-chips="place-${n}"></span>
      </div>`).join('');
+  return `
+    <div class="ct-wing">
+      <div class="ct-place-row">${placeBoxes}</div>
+      <div class="ct-zone ct-come" data-bet="come">
+        <span class="ct-zlabel">${t('ct_come')}</span>
+        <span class="ct-chips" data-chips="come"></span>
+      </div>
+      <div class="ct-zone ct-field" data-bet="field">
+        <span class="ct-zlabel">${t('ct_field')}</span>
+        <span class="ct-sub">${t('ct_field_sub')}</span>
+        <span class="ct-chips" data-chips="field"></span>
+      </div>
+      <div class="ct-mid-row">
+        <div class="ct-zone ct-big" data-bet="big68" data-number="6"><span class="ct-zlabel">${t('ct_big6')}</span><span class="ct-chips" data-chips="big68-6"></span></div>
+        <div class="ct-zone ct-dontcome" data-bet="dontcome">
+          <span class="ct-zlabel">${t('ct_dontcome')}</span>
+          <span class="ct-chips" data-chips="dontcome"></span>
+        </div>
+        <div class="ct-zone ct-big" data-bet="big68" data-number="8"><span class="ct-zlabel">${t('ct_big8')}</span><span class="ct-chips" data-chips="big68-8"></span></div>
+      </div>
+      <div class="ct-zone ct-dontpass" data-bet="dontpass">
+        <span class="ct-zlabel">${t('ct_dontpass')}</span>
+        <span class="ct-chips" data-chips="dontpass"></span>
+      </div>
+      <div class="ct-zone ct-pass" data-bet="pass">
+        <span class="ct-zlabel">${t('ct_pass')}</span>
+        <span class="ct-chips" data-chips="pass"></span>
+      </div>
+    </div>`;
+}
+function buildTable(){
+  const host = document.getElementById('crapstable');
+  if(!host) return;
+  const nums = ctPlaceNums();
   const hardNums=[4,6,8,10];
   const hardBoxes = hardNums.map(n=>
     `<div class="ct-zone ct-hard" data-bet="hardway" data-number="${n}">
@@ -69,16 +100,19 @@ function buildTable(){
       ${[5,10,25,100].map(v=>`<button class="ct-chipbtn${v===ctChip?' active':''}" data-chip="${v}">$${v}</button>`).join('')}
       <input type="number" id="ct-custom" class="ct-custom" placeholder="${t('ct_custom')}" min="1">
     </div>
+    <div class="ct-tablescroll">
+    <div class="ct-table">
     <div class="ct-felt" id="ct-felt">
-      <div class="ct-place-row">${placeBoxes}</div>
-      <div class="ct-hard-row">${hardBoxes}
+      ${ctWingHTML(nums)}
+      <div class="ct-center">
         <div class="ct-puckbox"><span class="ct-zlabel">${t('ct_puck_off')}</span><span data-puckslot="off"></span></div>
-      </div>
-      <div class="ct-props-row">
+        <div class="ct-hard-grid">${hardBoxes}</div>
         <div class="ct-zone ct-prop" data-bet="anyseven"><span class="ct-zlabel">${t('ct_anyseven')}</span><span class="ct-odds">4:1</span><span class="ct-chips" data-chips="anyseven"></span></div>
-        <div class="ct-zone ct-prop" data-bet="anycraps"><span class="ct-zlabel">${t('ct_anycraps')}</span><span class="ct-odds">7:1</span><span class="ct-chips" data-chips="anycraps"></span></div>
-        <div class="ct-zone ct-prop" data-bet="horn"><span class="ct-zlabel">${t('ct_horn')}</span><span class="ct-odds">2·3·11·12</span><span class="ct-chips" data-chips="horn"></span></div>
-        <div class="ct-zone ct-prop" data-bet="ce"><span class="ct-zlabel">${t('ct_ce')}</span><span class="ct-chips" data-chips="ce"></span></div>
+        <div class="ct-props-row">
+          <div class="ct-zone ct-prop" data-bet="anycraps"><span class="ct-zlabel">${t('ct_anycraps')}</span><span class="ct-odds">7:1</span><span class="ct-chips" data-chips="anycraps"></span></div>
+          <div class="ct-zone ct-prop" data-bet="horn"><span class="ct-zlabel">${t('ct_horn')}</span><span class="ct-odds">2·3·11·12</span><span class="ct-chips" data-chips="horn"></span></div>
+          <div class="ct-zone ct-prop" data-bet="ce"><span class="ct-zlabel">${t('ct_ce')}</span><span class="ct-chips" data-chips="ce"></span></div>
+        </div>
         <div class="ct-zone ct-prop ct-hopzone">
           <span class="ct-zlabel">${t('ct_hop')}</span>
           <span class="ct-hopctl">
@@ -88,31 +122,9 @@ function buildTable(){
           <span class="ct-chips" data-chips="hop"></span>
         </div>
       </div>
-      <div class="ct-zone ct-come" data-bet="come">
-        <span class="ct-zlabel">${t('ct_come')}</span>
-        <span class="ct-chips" data-chips="come"></span>
-      </div>
-      <div class="ct-zone ct-dontcome" data-bet="dontcome">
-        <span class="ct-zlabel">${t('ct_dontcome')}</span>
-        <span class="ct-chips" data-chips="dontcome"></span>
-      </div>
-      <div class="ct-zone ct-field" data-bet="field">
-        <span class="ct-zlabel">${t('ct_field')}</span>
-        <span class="ct-sub">${t('ct_field_sub')}</span>
-        <span class="ct-chips" data-chips="field"></span>
-      </div>
-      <div class="ct-zone ct-dontpass" data-bet="dontpass">
-        <span class="ct-zlabel">${t('ct_dontpass')}</span>
-        <span class="ct-chips" data-chips="dontpass"></span>
-      </div>
-      <div class="ct-zone ct-pass" data-bet="pass">
-        <span class="ct-zlabel">${t('ct_pass')}</span>
-        <span class="ct-chips" data-chips="pass"></span>
-      </div>
-      <div class="ct-big-row">
-        <div class="ct-zone ct-big" data-bet="big68" data-number="6"><span class="ct-zlabel">${t('ct_big6')}</span><span class="ct-chips" data-chips="big68-6"></span></div>
-        <div class="ct-zone ct-big" data-bet="big68" data-number="8"><span class="ct-zlabel">${t('ct_big8')}</span><span class="ct-chips" data-chips="big68-8"></span></div>
-      </div>
+      ${ctWingHTML([...nums].reverse())}
+    </div>
+    </div>
     </div>
     <div class="ct-histwrap">
       <div class="ct-histhead">${t('ct_rolls')}</div>
@@ -188,9 +200,10 @@ function renderTable(){
   const host = document.getElementById('crapstable');
   if(!host || !host.querySelector('.ct-felt')) return;
 
-  // rebuild place row if crapless toggled
+  // rebuild place row if crapless toggled (check first wing only — both wings mirror it)
   const nums = ctPlaceNums();
-  const curBoxes = host.querySelectorAll('.ct-place-row .ct-num');
+  const firstRow = host.querySelector('.ct-place-row');
+  const curBoxes = firstRow ? firstRow.querySelectorAll('.ct-num') : [];
   const curNums = [...curBoxes].map(x=>+x.dataset.number).join(',');
   if(curNums !== nums.join(',')){ buildTable(); return; }
 
@@ -207,28 +220,30 @@ function renderTable(){
     (byZone[z] = byZone[z] || []).push(b);
   });
   Object.keys(byZone).forEach(z=>{
-    const el = host.querySelector(`[data-chips="${z}"]`);
-    if(!el) return;
+    const els = host.querySelectorAll(`[data-chips="${z}"]`);
+    if(!els.length) return;
     const bets = byZone[z];
     const total = bets.reduce((s,b)=>s+b.amount, 0);
     const n = Math.min(3, bets.length);
     let chips='';
     for(let i=0;i<n;i++) chips+=`<span class="ct-chip c${i%4}"></span>`;
-    el.innerHTML = chips + `<span class="ct-amt">$${total}</span>`;
-    el.closest('.ct-zone').classList.add('has-bet');
+    els.forEach(el=>{
+      el.innerHTML = chips + `<span class="ct-amt">$${total}</span>`;
+      el.closest('.ct-zone').classList.add('has-bet');
+    });
   });
   host.querySelectorAll('.ct-zone').forEach(z=>{
     const key = z.querySelector('[data-chips]');
     if(key && !byZone[key.dataset.chips]) z.classList.remove('has-bet');
   });
 
-  // puck
+  // puck (shown on the point box at both ends of the table)
+  host.querySelectorAll('.ct-zone.is-point').forEach(z=>z.classList.remove('is-point'));
   if(eng.phase==='point' && eng.point){
-    const slot = host.querySelector(`[data-puckslot="${eng.point}"]`);
-    if(slot){
+    host.querySelectorAll(`[data-puckslot="${eng.point}"]`).forEach(slot=>{
       slot.innerHTML = `<span class="ct-puck on">${t('ct_puck_on')}</span>`;
       slot.closest('.ct-zone').classList.add('is-point');
-    }
+    });
   } else {
     const slot = host.querySelector('[data-puckslot="off"]');
     if(slot) slot.innerHTML = `<span class="ct-puck off">${t('ct_puck_off')}</span>`;
