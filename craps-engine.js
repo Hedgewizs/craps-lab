@@ -656,6 +656,7 @@ ironcross: {
   name:{en:'Iron Cross', zh:'鐵十字'},
   desc:{en:'Place 5/6/8 + field after the come-out. Wins on every roll except 7 — which wipes the whole layout 16.7% of the time.', zh:'開骰後置注 5/6/8 + field。除了 7 每擲都贏——但 7 有 16.7% 機率一次清檯。'},
   fn(eng, mem){
+    if(eng.phase==='comeout' && !eng.getBets('place').length){ mem.set=false; mem.reg=false; mem.done=false; mem.taken=0; }
     if(eng.phase!=='point') return;
     try{
       if(!eng.hasBet('place',5)) eng.placeBet('place',{amount:10, number:5});
@@ -671,9 +672,13 @@ martingale: {
   fn(eng, mem){
     if(mem.streak===undefined) mem.streak=0;
     if(eng.phase==='comeout' && !eng.hasBet('pass')){
+      if(mem.inPlay){
+        // previous pass decision resolved: bankroll above placement snapshot = win
+        if(eng.bankroll > mem.snap) mem.streak=0; else mem.streak++;
+        mem.inPlay=false;
+      }
       const amt = Math.min(10*Math.pow(2,mem.streak), eng.tableMax, Math.floor(eng.bankroll));
-      if(amt>=eng.tableMin) eng.placeBet('pass',{amount:amt});
-      mem.pending=amt;
+      if(amt>=eng.tableMin){ try{ eng.placeBet('pass',{amount:amt}); mem.inPlay=true; mem.snap=eng.bankroll; }catch(e){} }
     }
   },
   onDecision:null // handled via bankroll delta tracking in UI; batch uses streak via mem
@@ -711,8 +716,12 @@ oneThreeTwoFive: {
     const seq=[1,3,2,5], U=10;
     if(mem.i===undefined) mem.i=0;
     if(eng.phase==='comeout' && !eng.hasBet('pass')){
-      eng.placeBet('pass',{amount:U*seq[mem.i]});
-      mem.cur=U*seq[mem.i];
+      if(mem.inPlay){
+        if(eng.bankroll > mem.snap) mem.i=(mem.i+1)%4; else mem.i=0;
+        mem.inPlay=false;
+      }
+      const amt=U*seq[mem.i];
+      if(amt<=eng.bankroll && amt>=eng.tableMin){ try{ eng.placeBet('pass',{amount:amt}); mem.inPlay=true; mem.snap=eng.bankroll; }catch(e){} }
     }
   }
 },
@@ -744,6 +753,7 @@ inside110: {
   name:{en:'$110 Inside one-hit regression', zh:'$110 內圍一擊回歸'},
   desc:{en:'$25/$25/$30/$30 on 5/9/6/8. First hit pays $35 → regress to $22 across, +$13 locked, freeroll the rest.', zh:'5/9 各 $25、6/8 各 $30。第一擊付 $35 → 回歸到 $22，鎖定 +$13，之後 freeroll。'},
   fn(eng, mem){
+    if(eng.phase==='comeout' && !eng.getBets('place').length){ mem.set=false; mem.reg=false; mem.done=false; mem.taken=0; }
     if(eng.phase!=='point') return;
     if(!mem.set){
       try{
@@ -764,6 +774,7 @@ reg68_24: {
   name:{en:'$24 6/8 one-hit regression', zh:'$24 6/8 一擊回歸'},
   desc:{en:'$12 on 6 and 8. First hit pays $14 → drop both to $6. +$2 locked on a $24 risk.', zh:'6 和 8 各 $12。第一擊付 $14 → 降到各 $6。$24 風險鎖定 +$2。'},
   fn(eng, mem){
+    if(eng.phase==='comeout' && !eng.getBets('place').length){ mem.set=false; mem.reg=false; mem.done=false; mem.taken=0; }
     if(eng.phase!=='point') return;
     if(!mem.set){
       try{ eng.placeBet('place',{amount:12,number:6}); eng.placeBet('place',{amount:12,number:8}); mem.set=true; mem.orig=eng.bankroll; }
@@ -779,6 +790,7 @@ inside22: {
   name:{en:'$22 Inside two-hit takedown', zh:'$22 內圍兩擊收工'},
   desc:{en:'$5/$5/$6/$6 inside. Take down the first two hits, no press — about +$4 with $10 still working.', zh:'內圍 $5/$5/$6/$6。前兩擊直接收下不加注——約 +$4，檯上還留 $10。'},
   fn(eng, mem){
+    if(eng.phase==='comeout' && !eng.getBets('place').length){ mem.set=false; mem.reg=false; mem.done=false; mem.taken=0; }
     if(eng.phase!=='point') return;
     if(!mem.set){
       try{
@@ -801,6 +813,7 @@ reno12: {
   name:{en:'$12 6/8 one-hit take-down', zh:'$12 6/8 一擊全收'},
   desc:{en:'$6 on 6 and 8. First hit → take both down, wait for the roll to end. Simplest one-hit system.', zh:'6 和 8 各 $6。第一擊 → 全部收下，等這輪結束。最簡單的一擊系統。'},
   fn(eng, mem){
+    if(eng.phase==='comeout' && !eng.getBets('place').length){ mem.set=false; mem.reg=false; mem.done=false; mem.taken=0; }
     if(eng.phase!=='point') return;
     if(!mem.set){
       try{ eng.placeBet('place',{amount:6,number:6}); eng.placeBet('place',{amount:6,number:8}); mem.set=true; mem.orig=eng.bankroll; }
@@ -814,6 +827,7 @@ reno12: {
 
 function cover4fn(mode){
   return function(eng, mem){
+    if(eng.phase==='comeout'){ if(!eng.getBets('place').length) mem.set=false; return; }
     if(eng.phase!=='point') return;
     if(!mem.set){
       try{
