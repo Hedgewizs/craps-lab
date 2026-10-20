@@ -111,7 +111,7 @@ function drawHist(r){
   ctx.fillText('$'+Math.round(min),8,H-8); ctx.fillText('$'+Math.round(max),W-110,H-8);
   ctx.fillStyle='#e05252'; ctx.fillText('$0',zx+6,30);
 }
-function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
+function sname(k){ const n=STRATEGIES[k].name; return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
 function onLangChange(){
   const s=document.getElementById('b_strat');
   s.innerHTML=Object.keys(STRATEGIES).map(k=>`<option value="${k}">${sname(k)}</option>`).join('');

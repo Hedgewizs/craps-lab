@@ -119,7 +119,7 @@ function runHour(){
     <div class="mt">${detail}</div>
     <p class="muted">${t('hour_note')}</p>`;
 }
-function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
+function sname(k){ const n=STRATEGIES[k].name; return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
 function onLangChange(){
   const s=document.getElementById('g_strat');
   s.innerHTML=Object.keys(STRATEGIES).map(k=>`<option value="${k}">${sname(k)}</option>`).join('');

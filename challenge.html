@@ -111,7 +111,7 @@ function drawCh(){
   ctx.stroke();
 }
 function log2(m){ const el=document.getElementById('ch_rolls'); el.innerHTML='<div>'+m+'</div>'+el.innerHTML; }
-function sname(k){ const n=sname(k); return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
+function sname(k){ const n=STRATEGIES[k].name; return (typeof n==='object')?(LANG==='zh'?n.zh:n.en):n; }
 function onLangChange(){
   const s=document.getElementById('ch_strat');
   s.innerHTML=`<option value="manual">${t('preset_manual')}</option>`+
