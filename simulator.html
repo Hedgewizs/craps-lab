@@ -7,44 +7,61 @@
 <meta name="description" content="Interactive craps simulator: every bet on a modern table including crapless, working/off toggles, strategy presets, bankroll chart. Free, bilingual.">
 <link rel="stylesheet" href="styles.css">
 <style>
-/* ---------- interactive craps table ---------- */
+/* ---------- interactive craps table (wide single-end, Crapsee-style) ---------- */
+.sim-wide{width:100vw;margin-left:calc(50% - 50vw);padding:0 14px;box-sizing:border-box}
+.sim-controlbar{display:flex;flex-direction:column;align-items:center;margin:14px 0 0}
 .ct-wrap{margin:18px 0}
-.ct-chipbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-.ct-chipbar-label{color:var(--gold);font-weight:700;font-size:.9rem}
-.ct-chipbtn{background:var(--card);border:2px solid var(--line);color:var(--cream);border-radius:999px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:.95rem}
-.ct-chipbtn:hover{border-color:var(--gold)}
-.ct-chipbtn.active{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
-.ct-custom{background:#0a3529;border:1px solid var(--line);color:var(--cream);border-radius:8px;padding:8px 10px;width:110px;font-size:.95rem}
 .ct-tablescroll{overflow-x:auto;padding-bottom:6px}
-.ct-table{background:linear-gradient(160deg,#7a5a24,#4a3512 60%,#5d451a);border-radius:120px;padding:16px;min-width:900px;box-shadow:inset 0 2px 8px rgba(255,220,150,.35),inset 0 -6px 14px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.45)}
-.ct-felt{background:radial-gradient(ellipse at 50% 30%,#10714c,#07271e 85%);border:2px solid rgba(0,0,0,.45);border-radius:96px;padding:20px 22px;user-select:none;display:grid;grid-template-columns:1fr .8fr 1fr;gap:14px}
-.ct-wing{display:flex;flex-direction:column;gap:8px;min-width:0}
-.ct-center{display:flex;flex-direction:column;gap:8px;min-width:0;justify-content:flex-start}
-.ct-place-row{display:flex;gap:6px}
-.ct-place-row .ct-num{flex:1}
-.ct-hard-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.ct-props-row{display:grid;gap:6px;grid-template-columns:repeat(3,1fr)}
-.ct-mid-row{display:grid;gap:6px;grid-template-columns:1fr 1.5fr 1fr}
-.ct-zone{position:relative;border:1px dashed rgba(212,175,55,.55);border-radius:10px;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:8px 4px;background:rgba(0,0,0,.18);text-align:center;transition:background .15s}
+.ct-felt{background:radial-gradient(ellipse at 50% 25%,#0e6b46,#07271e 85%);border:3px solid #6b4f1d;border-radius:22px;padding:16px;user-select:none;min-width:960px;display:flex;flex-direction:column;gap:12px}
+.ct-toprow{display:grid;grid-template-columns:1fr 92px;gap:10px}
+.ct-place-row{display:flex;gap:8px}
+.ct-numbox{flex:1;display:flex;flex-direction:column;border:1px solid rgba(212,175,55,.45);border-radius:10px;overflow:hidden;background:rgba(0,0,0,.22)}
+.ct-lay{background:rgba(0,0,0,.45);color:var(--gold);font-weight:800;font-size:.72rem;letter-spacing:1px;text-align:center;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(212,175,55,.35)}
+.ct-lay:hover{background:rgba(212,175,55,.25)}
+.ct-num{border:0;border-radius:0;background:transparent;min-height:96px}
+.ct-num.is-point{box-shadow:inset 0 0 0 3px var(--gold),inset 0 0 22px rgba(212,175,55,.35)}
+.ct-num .ct-zlabel{font-size:1.7rem;color:var(--gold)}
+.ct-num.is-point .ct-zlabel{color:#fff}
+.ct-pb{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(212,175,55,.35)}
+.ct-pb span{padding:9px 0;text-align:center;cursor:pointer;font-weight:800;font-size:.78rem;letter-spacing:1px;color:var(--cream)}
+.ct-pb span:first-child{border-right:1px solid rgba(212,175,55,.35)}
+.ct-pb span:hover{background:rgba(212,175,55,.25)}
+.ct-dccol{display:flex;flex-direction:column;gap:8px}
+.ct-dontcome{flex:1;min-height:120px}
+.ct-dontcome .ct-zlabel{color:#c0392b;letter-spacing:2px}
+.ct-vert{writing-mode:vertical-rl}
+.ct-red{color:#c0392b!important}
+.ct-botrow{display:grid;grid-template-columns:320px 330px 1fr;gap:12px}
+.ct-panel{border:1px solid rgba(212,175,55,.35);border-radius:12px;padding:10px;background:rgba(0,0,0,.22);display:flex;flex-direction:column;gap:8px}
+.ct-paneltitle{color:var(--gold);font-weight:800;font-size:.82rem;letter-spacing:2px;text-align:center}
+.ct-hardgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ct-hardbox{min-height:86px}
+.ct-dicepair{display:flex;gap:6px;pointer-events:none}
+.ct-dicepair .ct-minidie{width:30px;height:30px}
+.ct-hardlab{color:var(--cream-dim);font-size:.68rem;margin-top:4px;pointer-events:none}
+.ct-bigrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ct-hopgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ct-hopbox{min-height:78px}
+.ct-propsrow2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.ct-bands{display:flex;flex-direction:column;gap:8px}
+.ct-come{min-height:96px;border-width:2px}
+.ct-come .ct-zlabel{font-size:2rem;letter-spacing:6px;color:var(--gold)}
+.ct-field{min-height:76px}
+.ct-fieldnums{display:flex;justify-content:space-around;width:100%;color:var(--gold);font-weight:800;font-size:1rem;pointer-events:none;margin-bottom:4px}
+.ct-fcirc{width:30px;height:30px;border:2px solid var(--cream);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem}
+.ct-field .ct-zlabel{font-size:1.05rem;letter-spacing:4px}
+.ct-dontpass{min-height:52px}
+.ct-dontpass .ct-zlabel{font-size:1rem;letter-spacing:3px}
+.ct-pass{min-height:80px;border:3px solid rgba(212,175,55,.7)}
+.ct-pass .ct-zlabel{font-size:1.6rem;letter-spacing:8px}
+/* zone basics */
+.ct-zone{position:relative;border:1px dashed rgba(212,175,55,.55);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:8px 4px;background:rgba(0,0,0,.18);text-align:center;transition:background .15s}
 .ct-zone:hover{background:rgba(212,175,55,.22)}
 .ct-zone.has-bet{border-style:solid;border-color:var(--gold);background:rgba(212,175,55,.12)}
 .ct-zone.is-point{border:2px solid var(--gold);box-shadow:0 0 14px rgba(212,175,55,.5)}
 .ct-zlabel{color:var(--cream);font-weight:800;font-size:.82rem;letter-spacing:.5px;pointer-events:none}
 .ct-sub{color:var(--cream-dim);font-size:.68rem;pointer-events:none}
 .ct-odds{color:var(--gold-dim);font-size:.68rem;pointer-events:none}
-.ct-num{min-height:70px}
-.ct-num .ct-zlabel{font-size:1.25rem;color:var(--gold)}
-.ct-come{min-height:76px;border-width:2px}
-.ct-come .ct-zlabel{font-size:1.25rem}
-.ct-field .ct-zlabel{font-size:1.05rem;letter-spacing:2px}
-.ct-pass{border:3px solid rgba(212,175,55,.7);min-height:64px}
-.ct-felt>.ct-wing:first-child .ct-pass{border-radius:10px 10px 10px 64px}
-.ct-felt>.ct-wing:last-child .ct-pass{border-radius:10px 10px 64px 10px}
-.ct-pass .ct-zlabel{font-size:1rem;letter-spacing:3px}
-.ct-dontpass,.ct-dontcome{min-height:42px}
-.ct-dontpass .ct-zlabel,.ct-dontcome .ct-zlabel{font-size:.7rem;color:var(--cream-dim)}
-.ct-big{min-height:42px}
-.ct-big .ct-zlabel{font-size:.78rem}
 .ct-chips{position:absolute;top:4px;right:6px;display:flex;align-items:center;pointer-events:none}
 .ct-chip{width:22px;height:22px;border-radius:50%;border:2px dashed #fff;margin-left:-10px;box-shadow:0 2px 4px rgba(0,0,0,.5)}
 .ct-chip.c0{background:#e05252}.ct-chip.c1{background:#5aa9e6}.ct-chip.c2{background:#4caf7d}.ct-chip.c3{background:#1a1a1a}
@@ -53,11 +70,29 @@
 .ct-puck.on{background:#f5f0e1;color:#1a1a1a;border:3px solid #1a1a1a}
 .ct-puck.off{background:#1a1a1a;color:var(--cream-dim);border:3px solid var(--cream-dim)}
 .ct-puckslot{display:flex;justify-content:center;margin-top:4px;min-height:46px;align-items:center;pointer-events:none}
-.ct-puckbox{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px dashed rgba(212,175,55,.35);border-radius:10px;min-height:64px}
+.ct-puckbox{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px dashed rgba(212,175,55,.35);border-radius:10px;min-height:120px}
 .ct-hopctl{display:flex;gap:4px;margin-top:4px;pointer-events:auto}
 .ct-hopctl select{background:#0a3529;border:1px solid var(--line);color:var(--cream);border-radius:6px;padding:4px;font-size:.85rem}
 .ct-hopgo{background:var(--gold);border:none;border-radius:6px;padding:4px 10px;font-weight:800;cursor:pointer}
 .ct-hopzone{cursor:default}
+/* chip rack + quick controls */
+.ct-rackbar{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:14px;padding:14px;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:14px}
+.ct-chipbar-label{color:var(--gold);font-weight:700;font-size:.9rem}
+.ct-chipbtn{width:62px;height:62px;border-radius:50%;border:4px dashed rgba(255,255,255,.85);color:#fff;font-weight:800;font-size:.82rem;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.ct-chipbtn[data-chip="5"]{background:#c0392b}
+.ct-chipbtn[data-chip="10"]{background:#2980b9}
+.ct-chipbtn[data-chip="25"]{background:#27ae60}
+.ct-chipbtn[data-chip="100"]{background:#2c3e50}
+.ct-chipbtn[data-chip="500"]{background:#8e44ad}
+.ct-chipbtn.active{outline:3px solid var(--gold);box-shadow:0 0 16px rgba(212,175,55,.7)}
+.ct-custom{background:#0a3529;border:1px solid var(--line);color:var(--cream);border-radius:8px;padding:8px 10px;width:100px;font-size:.95rem}
+.ct-racksep{width:1px;align-self:stretch;background:var(--line)}
+/* roll distribution */
+.ct-dist{display:flex;gap:6px;align-items:flex-end;padding:10px;background:#04150f;border:1px solid var(--line);border-radius:10px;min-height:80px}
+.ct-distcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.ct-distbar{width:70%;max-width:34px;background:linear-gradient(180deg,var(--gold),#8a6d1f);border-radius:4px 4px 0 0}
+.ct-distn{color:var(--gold);font-size:.72rem;font-weight:700;min-height:14px}
+.ct-distl{color:var(--cream-dim);font-size:.78rem}
 /* roll history */
 .ct-histwrap{margin-top:14px}
 .ct-histhead{color:var(--gold);font-weight:700;margin-bottom:8px;font-size:.95rem}
@@ -70,9 +105,9 @@
 .ct-roll-total{font-weight:800;color:var(--gold);font-size:.85rem;margin-top:2px}
 .ct-handstats{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:.9rem;color:var(--cream-dim)}
 .ct-handstats b{color:var(--gold)}
-@media(max-width:640px){
-  .ct-table{min-width:840px}
-  .ct-num{min-height:60px}
+@media(max-width:700px){
+  .ct-botrow{grid-template-columns:1fr}
+  .ct-num .ct-zlabel{font-size:1.3rem}
 }
 </style>
 <script src="i18n.js"></script>
@@ -148,6 +183,7 @@ function doRoll(){
   if(preset!=='manual' && STRATEGIES[preset]){
     try{ STRATEGIES[preset].fn(eng,stratMem); }catch(e){ log('Preset: '+e.message); }
   }
+  window._ctLastBets = eng.bets.filter(b=>!b.parentId).map(b=>({type:b.type, params:Object.assign({amount:b.amount}, b.number?{number:b.number}:{}, b.type==='hop'?{d1:b.meta.d1, d2:b.meta.d2, hard:b.meta.hard}:{})}));
   const ev = eng.roll();
   const r = ev.find(e=>e.t==='roll');
   equity.push(eng.bankroll);
@@ -287,6 +323,17 @@ function buildPresets(){
 <section class="block">
 <h1 style="color:var(--gold)" data-i18n="sim_title">Full-Table Simulator</h1>
 <p data-i18n="sim_intro"></p>
+<div class="sim-wide">
+  <div id="crapstable"></div>
+  <div class="card center sim-controlbar">
+    <div id="phase" class="big" style="margin-bottom:6px"></div>
+    <div class="dice" id="dice"></div>
+    <div id="total" class="muted"></div>
+    <div class="mt"><button class="btn" style="font-size:1.3rem;padding:14px 44px;border-radius:999px" onclick="doRoll()" data-i18n="roll">Roll</button>
+    <button class="btn ghost" id="autobtn" onclick="toggleAuto()" data-i18n="auto_roll">Auto roll</button></div>
+    <div class="stat-grid" id="bank" style="margin-top:14px"></div>
+  </div>
+</div>
 <div class="grid cols2">
 <div>
   <div class="card"><h3 style="color:var(--gold);margin-top:0">⚙️ Session</h3>
@@ -322,15 +369,6 @@ function buildPresets(){
   <div id="betbtns"></div>
 </div>
 <div>
-  <div id="crapstable"></div>
-  <div class="card center">
-    <div id="phase" class="big" style="margin-bottom:6px"></div>
-    <div class="dice" id="dice"></div>
-    <div id="total" class="muted"></div>
-    <div class="mt"><button class="btn" style="font-size:1.3rem;padding:14px 44px" onclick="doRoll()" data-i18n="roll">Roll</button>
-    <button class="btn ghost" id="autobtn" onclick="toggleAuto()" data-i18n="auto_roll">Auto roll</button></div>
-    <div class="stat-grid" id="bank" style="margin-top:14px"></div>
-  </div>
   <div class="card"><h3 style="color:var(--gold);margin-top:0">📊 <span data-i18n="stats">Session stats</span></h3>
     <canvas class="chart" id="chart"></canvas>
   </div>
