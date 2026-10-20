@@ -403,6 +403,13 @@ class CrapsEngine {
         // come / don't come bets (traveled or traveling): lose/win on 7
         this.getBets('come').forEach(b=>{this._lose(b,'LOSE come (7-out)'); this._dropOddsOf(b.id);});
         this.getBets('dontcome').forEach(b=>this._winEven(b,'WIN don\'t come (7-out)'));
+        // lay odds behind don't bets win at inverse true odds
+        this.getBets('odds').filter(o=>o.meta.lay).forEach(o=>{
+          const [p,q]=TRUE_ODDS[o.number];
+          const profit = o.amount*q/p;
+          this._pay(o, profit, 'WIN lay odds '+o.amount+' on '+o.number);
+          this.bankroll += o.amount; this._drop(o.id);
+        });
         // place/buy/hardway: working lose, off returned
         ['place','buy','hardway','big68'].forEach(ty=>{
           this.getBets(ty).forEach(b=>{
@@ -648,6 +655,30 @@ molly: {
       if(!eng.hasBet('odds', c.number)){
         let amt=c.number===4||c.number===10?U*3:(c.number===5||c.number===9?U*4:U*5);
         try{ eng.placeBet('odds',{amount:amt, parentId:c.id}); }catch(e){}
+      }
+    });
+  }
+},
+dolly: {
+  name:{en:'Three Point Dolly (dark side)', zh:'三點 Dolly（反向）'},
+  desc:{en:'The Molly\'s mirror image: $10 don\'t pass + $30 lay odds, up to two $10 don\'t come bets with lay odds. Same ~0.3% blended edge — you win when the table goes cold.', zh:'Molly 的鏡像：$10 不過關 + $30 放賠率，最多兩個 $10 不來注加放賠率。一樣約 0.3% 綜合優勢——桌冷你贏。'},
+  fn(eng, mem){
+    const U=10;
+    if(eng.phase==='comeout'){
+      if(!eng.hasBet('dontpass')) try{ eng.placeBet('dontpass',{amount:U}); }catch(e){}
+      return;
+    }
+    const line=eng.getBets('dontpass')[0];
+    if(line && !eng.hasBet('odds', eng.point)){
+      try{ eng.placeBet('odds',{amount:30, parentId:line.id}); }catch(e){}
+    }
+    const dcs=eng.getBets('dontcome').filter(c=>!c.meta.traveling);
+    if(dcs.length<2 && !eng.getBets('dontcome').some(c=>c.meta.traveling)){
+      try{ eng.placeBet('dontcome',{amount:U}); }catch(e){}
+    }
+    dcs.forEach(c=>{
+      if(!eng.hasBet('odds', c.number)){
+        try{ eng.placeBet('odds',{amount:30, parentId:c.id}); }catch(e){}
       }
     });
   }
