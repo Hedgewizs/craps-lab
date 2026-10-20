@@ -9,7 +9,11 @@
 <style>
 /* ---------- interactive craps table (wide single-end, Crapsee-style) ---------- */
 .sim-wide{width:100vw;margin-left:calc(50% - 50vw);padding:0 14px;box-sizing:border-box}
+body{overflow-x:clip}
 .sim-controlbar{display:flex;flex-direction:column;align-items:center;margin:14px 0 0}
+.sim-controlbar .stat-grid{width:100%;max-width:920px;grid-template-columns:repeat(4,1fr)}
+.ct-diepop{animation:ctpop .35s ease}
+@keyframes ctpop{0%{transform:scale(.6) rotate(-14deg)}60%{transform:scale(1.15) rotate(6deg)}100%{transform:scale(1)}}
 .ct-wrap{margin:18px 0}
 .ct-tablescroll{overflow-x:auto;padding-bottom:6px}
 .ct-felt{background:radial-gradient(ellipse at 50% 25%,#0e6b46,#07271e 85%);border:3px solid #6b4f1d;border-radius:22px;padding:16px;user-select:none;min-width:960px;display:flex;flex-direction:column;gap:12px}
@@ -108,6 +112,7 @@
 @media(max-width:700px){
   .ct-botrow{grid-template-columns:1fr}
   .ct-num .ct-zlabel{font-size:1.3rem}
+  .sim-controlbar .stat-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 <script src="i18n.js"></script>
@@ -230,9 +235,10 @@ function dieSVG(v){
 function renderAll(lastRoll){
   if(!eng) return;
   // dice
+  const ld1 = lastRoll? lastRoll.d1 : 1, ld2 = lastRoll? lastRoll.d2 : 1;
   document.getElementById('dice').innerHTML =
-    `<div class="die">${dieSVG(eng.lastD1||1)}</div><div class="die">${dieSVG(eng.lastD2||1)}</div>`;
-  document.getElementById('total').textContent = eng.lastTotal? (t('total')+': '+eng.lastTotal) : '';
+    `<div class="die ct-diepop">${dieSVG(ld1)}</div><div class="die ct-diepop">${dieSVG(ld2)}</div>`;
+  document.getElementById('total').textContent = lastRoll? (t('total')+': '+lastRoll.total) : '';
   // phase
   const ph = eng.phase==='comeout' ? '⚫ '+t('comeout') : '🟡 '+t('point_on')+': '+eng.point;
   document.getElementById('phase').innerHTML = ph+' &nbsp;·&nbsp; 🎲 '+t('shooter')+' #'+eng.shooters;
