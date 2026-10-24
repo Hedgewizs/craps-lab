@@ -5,6 +5,7 @@
 const I18N = {
 en:{
   nav_home:"Home", nav_guide:"Guide", nav_sim:"Simulator", nav_batch:"Batch Lab",
+  nav_bankroll:"Bankroll Lab",
   nav_challenge:"Challenge", nav_practice:"Practice", nav_calc:"Calculators", nav_gear:"Gear", nav_about:"About",
   hero_tag:"The honest craps lab. Every bet. Real dice math. No real money.",
   hero_sub:"Learn the table, test strategies against 100,000 simulated sessions, and practice payouts — free, no signup.",
@@ -30,6 +31,7 @@ en:{
 },
 zh:{
   nav_home:"首頁", nav_guide:"指南", nav_sim:"模擬器", nav_batch:"批量實驗室",
+  nav_bankroll:"賭本曲線實驗室",
   nav_challenge:"挑戰模式", nav_practice:"練習", nav_calc:"計算機", nav_gear:"裝備", nav_about:"關於",
   hero_tag:"誠實的花旗骰實驗室。每種注。真實骰子數學。不賭真錢。",
   hero_sub:"學會看桌、用 100,000 次模擬 session 測試策略、練習賠付計算——免費，免註冊。",
@@ -75,7 +77,7 @@ function disclosure(){
 function navHTML(active){
   const L = [
     ['index.html','nav_home'],['guide.html','nav_guide'],['simulator.html','nav_sim'],
-    ['batch.html','nav_batch'],['practice.html','nav_practice'],
+    ['batch.html','nav_batch'],['bankroll-lab.html','nav_bankroll'],['practice.html','nav_practice'],
     ['calculators.html','nav_calc'],['gear.html','nav_gear'],['about.html','nav_about']
   ];
   return `<header class="site"><nav class="nav">

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craps Lab — Bankroll Lab</title>
+<meta name="description" content="Watch a craps strategy's bankroll curve over hundreds of rolls: mean trajectory, winning-session rate, and average worst dip — simulated in your browser. No real money.">
+<link rel="stylesheet" href="styles.css">
+<script src="i18n.js"></script>
+<script src="craps-engine.js"></script>
+<script>
+Object.assign(I18N.en,{
+  bl_title:"Bankroll Lab", bl_intro:"Pick a strategy and watch its bankroll curve over a full session — not just the final profit. The mean line is the average across all sessions; the faint lines are five individual sessions, so you can see the swings hiding behind the average. Every curve below the start line is the house edge, doing its job.",
+  bl_strat:"Strategy", bl_bank:"Starting bankroll", bl_sessions:"Sessions", bl_rolls:"Rolls per session",
+  bl_run:"Run curves", bl_running:"Running…",
+  bl_mean_final:"Mean final bankroll", bl_profitable:"Sessions ending ahead", bl_mean_low:"Mean session low",
+  bl_curve:"Bankroll curve", bl_note:"Curve shows bankroll + money currently on the table (the same “total cash” a casino cage would count). Sessions keep rolling even if the bankroll runs dry — a broke session just stops betting, like a real player out of chips.",
+  bl_start_line:"Start",
+});
+Object.assign(I18N.zh,{
+  bl_title:"賭本曲線實驗室", bl_intro:"選一個策略，看它在完整 session 裡的賭本曲線——不只看最終損益。粗線是所有 session 的平均值；淡線是五個個別 session，讓你看見平均值背後藏著的波動。起跑線以下的曲線，就是莊家優勢在工作。",
+  bl_strat:"策略", bl_bank:"起始賭本", bl_sessions:"模擬次數", bl_rolls:"每 session 擲骰次數",
+  bl_run:"執行曲線", bl_running:"執行中…",
+  bl_mean_final:"平均最終賭本", bl_profitable:"收紅的 session 比例", bl_mean_low:"平均 session 最低點",
+  bl_curve:"賭本曲線", bl_note:"曲線顯示「賭本＋桌上注金」（和賭場櫃檯會數的總現金相同）。賭本歸零的 session 會繼續擲骰、只是不再下注——就像現實中沒籌碼的玩家。",
+  bl_start_line:"起跑線",
+});
+/* Strategies for the curve tool. Thin functions on top of CrapsEngine —
+   no second engine. pass10 reuses the site's own flat10 preset.
+   ironcross5 / molly2x mirror the Python crapssim reference systems exactly
+   (verified Oct 2026 against crapssim 0.4.1: see verification note below),
+   except odds on 6/8 are rounded down to the engine's $6-unit rule —
+   odds pay at true odds, so this changes variance, not expected value. */
+function odds2x(point, flat){
+  const raw = flat * 2;
+  if(point===6 || point===8) return Math.floor(raw/6)*6;
+  if(point===5 || point===9) return raw % 2 === 0 ? raw : raw - 1;
+  return raw;
+}
+const BL_STRATS = {
+  pass10: { fn: STRATEGIES.flat10.fn,
+    name:{en:'Pass Line $10', zh:'過關線 $10'} },
+  ironcross5: { fn(eng){
+    if(eng.phase==='comeout'){
+      if(!eng.hasBet('pass')){ try{ eng.placeBet('pass',{amount:5}); }catch(e){} }
+      return;
+    }
+    const line = eng.getBets('pass')[0];
+    if(line && !eng.hasBet('odds', eng.point)){
+      try{ eng.placeBet('odds',{amount:odds2x(eng.point,5), parentId:line.id}); }catch(e){}
+    }
+    try{
+      if(eng.point!==5 && !eng.hasBet('place',5)) eng.placeBet('place',{amount:10, number:5});
+      if(eng.point!==6 && !eng.hasBet('place',6)) eng.placeBet('place',{amount:12, number:6});
+      if(eng.point!==8 && !eng.hasBet('place',8)) eng.placeBet('place',{amount:12, number:8});
+      if(!eng.hasBet('field')) eng.placeBet('field',{amount:5});
+    }catch(e){}
+  }, name:{en:'Iron Cross (base $5)', zh:'鐵十字（底注 $5）'} },
+  molly2x: { fn(eng){
+    const U = 10;
+    if(eng.phase==='comeout'){
+      if(!eng.hasBet('pass')){ try{ eng.placeBet('pass',{amount:U}); }catch(e){} }
+      return;
+    }
+    const line = eng.getBets('pass')[0];
+    if(line && !eng.hasBet('odds', eng.point)){
+      try{ eng.placeBet('odds',{amount:odds2x(eng.point,U), parentId:line.id}); }catch(e){}
+    }
+    const comes = eng.getBets('come');
+    if(comes.length < 2 && !comes.some(c=>c.meta.traveling)){
+      try{ eng.placeBet('come',{amount:U}); }catch(e){}
+    }
+    eng.getBets('come').filter(c=>!c.meta.traveling).forEach(c=>{
+      if(!eng.hasBet('odds', c.number)){
+        try{ eng.placeBet('odds',{amount:odds2x(c.number,U), parentId:c.id}); }catch(e){}
+      }
+    });
+  }, name:{en:'Three Point Molly $10 + 2x odds', zh:'三點 Molly $10＋2 倍賠率'} },
+  place68: { fn(eng){
+    if(eng.phase!=='point') return;
+    try{
+      if(eng.point!==6 && !eng.hasBet('place',6)) eng.placeBet('place',{amount:6, number:6});
+      if(eng.point!==8 && !eng.hasBet('place',8)) eng.placeBet('place',{amount:6, number:8});
+    }catch(e){}
+  }, name:{en:'Place 6 & 8 ($6 each)', zh:'置注 6 和 8（各 $6）'} },
+};
+function blName(k){ const n = BL_STRATS[k].name; return LANG==='zh' ? n.zh : n.en; }
+function totalCash(eng){ return eng.bankroll + eng.bets.reduce((a,b)=>a+b.amount, 0); }
+
+let blRunning = false, lastResult = null;
+function runCurves(){
+  if(blRunning) return;
+  const strat = document.getElementById('bl_strat').value;
+  const start = +document.getElementById('bl_bank').value || 1000;
+  const n = Math.min(1000, Math.max(1, +document.getElementById('bl_n').value || 200));
+  const rolls = Math.min(1000, Math.max(10, +document.getElementById('bl_rolls').value || 300));
+  const SNAP = 10;
+  blRunning = true;
+  document.getElementById('runbtn').textContent = t('bl_running');
+  document.getElementById('results').innerHTML = '<p class="muted">'+t('bl_running')+'</p>';
+  const fn = BL_STRATS[strat].fn;
+  const seedBase = (Math.random()*1e9)|0;
+  const trajs = [];
+  let i = 0; const CH = 25;
+  function chunk(){
+    const end = Math.min(i+CH, n);
+    for(; i<end; i++){
+      const eng = new CrapsEngine({seed: seedBase+i*7919, bankroll: start, tableMin: 5,
+        tableMax: 10000, oddsMax: '3-4-5x', fieldPay: '2x'});
+      const mem = {};
+      const snap = [start];
+      for(let r=0; r<rolls; r++){
+        try{ fn(eng, mem); }catch(e){}
+        eng.roll();
+        if((r+1)%SNAP===0) snap.push(Math.round(totalCash(eng)*100)/100);
+      }
+      trajs.push(snap);
+    }
+    document.getElementById('results').innerHTML =
+      `<p class="muted">${t('bl_running')} ${i}/${n}</p><div class="bar"><i style="width:${(i/n*100).toFixed(1)}%"></i></div>`;
+    if(i<n) setTimeout(chunk, 0);
+    else { blRunning = false; document.getElementById('runbtn').textContent = t('bl_run');
+      lastResult = {strat, start, n, rolls, SNAP, trajs}; renderResults(); }
+  }
+  setTimeout(chunk, 30);
+}
+function renderResults(){
+  if(!lastResult) return;
+  const {strat, start, n, rolls, SNAP, trajs} = lastResult;
+  const pts = trajs[0].length;
+  const mean = [];
+  for(let j=0; j<pts; j++){
+    let s = 0; for(let k=0; k<trajs.length; k++) s += trajs[k][j];
+    mean.push(s/trajs.length);
+  }
+  const finals = trajs.map(a=>a[a.length-1]);
+  const meanFinal = finals.reduce((a,b)=>a+b,0)/n;
+  const prof = finals.filter(f=>f>start).length/n*100;
+  const meanLow = trajs.reduce((a,a2)=>a+Math.min(...a2),0)/n;
+  document.getElementById('results').innerHTML = `
+    <h3 style="color:var(--gold)">${blName(strat)} · ${n.toLocaleString()} ${t('sessions')} · ${rolls} ${t('bl_rolls').toLowerCase()}</h3>
+    <div class="stat-grid">
+      <div class="stat"><div class="v ${meanFinal>=start?'pos':'neg'}">$${meanFinal.toFixed(0)}</div><div class="l">${t('bl_mean_final')}</div></div>
+      <div class="stat"><div class="v">${prof.toFixed(1)}%</div><div class="l">${t('bl_profitable')}</div></div>
+      <div class="stat"><div class="v neg">$${meanLow.toFixed(0)}</div><div class="l">${t('bl_mean_low')}</div></div>
+    </div>
+    <div class="card"><h3 style="color:var(--gold);margin-top:0">📈 ${t('bl_curve')}</h3><canvas class="chart" id="curve"></canvas>
+    <p class="muted" style="font-size:.85rem">${t('bl_note')}</p></div>`;
+  drawCurve(trajs, mean, start);
+}
+function drawCurve(trajs, mean, start){
+  const c = document.getElementById('curve'); if(!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width = c.offsetWidth*2, H = c.height = 520;
+  const padL = 130, padR = 20, padT = 30, padB = 50;
+  let lo = start, hi = start;
+  trajs.slice(0,5).concat([mean]).forEach(a=>a.forEach(v=>{ if(v<lo) lo=v; if(v>hi) hi=v; }));
+  const span = (hi-lo)||1, pad = span*0.08; lo -= pad; hi += pad;
+  const X = j => padL + j/(mean.length-1)*(W-padL-padR);
+  const Y = v => padT + (hi-v)/(hi-lo)*(H-padT-padB);
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#cfc9b4'; ctx.font = '22px sans-serif';
+  for(let g=0; g<=4; g++){
+    const v = lo + (hi-lo)*g/4, y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W-padR, y); ctx.stroke();
+    ctx.fillText('$'+Math.round(v), 8, y+8);
+  }
+  // five individual sessions, faint
+  ctx.lineWidth = 2;
+  const cols = ['#e05252','#38bdf8','#a78bfa','#facc15','#34d399'];
+  trajs.slice(0,5).forEach((a,si)=>{
+    ctx.strokeStyle = cols[si%cols.length]; ctx.globalAlpha = 0.35;
+    ctx.beginPath(); a.forEach((v,j)=>{ const x=X(j), y=Y(v); j?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+  // start line
+  ctx.strokeStyle = '#e8e4d8'; ctx.lineWidth = 2; ctx.setLineDash([12,8]);
+  ctx.beginPath(); ctx.moveTo(padL, Y(start)); ctx.lineTo(W-padR, Y(start)); ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle = '#e8e4d8';
+  ctx.fillText(t('bl_start_line')+' $'+start, padL+8, Y(start)-10);
+  // mean curve
+  ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 5; ctx.beginPath();
+  mean.forEach((v,j)=>{ const x=X(j), y=Y(v); j?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+  ctx.fillStyle = '#cfc9b4';
+  ctx.fillText('0', padL, H-12); ctx.fillText(String((mean.length-1)*10), W-padR-60, H-12);
+}
+function onLangChange(){
+  const s = document.getElementById('bl_strat');
+  if(s) s.innerHTML = Object.keys(BL_STRATS).map(k=>`<option value="${k}">${blName(k)}</option>`).join('');
+  if(lastResult) renderResults();
+}
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2871648321226549" crossorigin="anonymous"></script>
+</head>
+<body>
+<script>document.write(navHTML('bankroll-lab.html'));</script>
+<div class="wrap"><section class="block">
+<h1 style="color:var(--gold)" data-i18n="bl_title">Bankroll Lab</h1>
+<p data-i18n="bl_intro"></p>
+<div class="card"><div class="rowflex">
+  <label class="f"><span data-i18n="bl_strat">Strategy</span><br><select id="bl_strat"></select></label>
+  <label class="f"><span data-i18n="bl_bank">Starting bankroll</span><br><input type="number" id="bl_bank" value="1000" style="width:110px"></label>
+  <label class="f"><span data-i18n="bl_sessions">Sessions</span><br><select id="bl_n">
+    <option value="100">100</option><option value="200" selected>200</option><option value="500">500</option><option value="1000">1,000</option>
+  </select></label>
+  <label class="f"><span data-i18n="bl_rolls">Rolls per session</span><br><input type="number" id="bl_rolls" value="300" style="width:100px"></label>
+</div>
+<div class="mt"><button class="btn" id="runbtn" onclick="runCurves()" data-i18n="bl_run">Run curves</button></div>
+</div>
+<div id="results"></div>
+<script>document.write(disclosure());</script>
+</section></div>
+<script>document.write(adSlot());</script>
+<script>document.write(footerHTML());</script>
+<script>onLangChange();</script>
+</body>
+</html>

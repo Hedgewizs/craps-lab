@@ -397,6 +397,12 @@ class CrapsEngine {
       this._trackBonus(T, true);
       if(T===7){
         ev.push({t:'sevenout', point:P});
+        // FIX (Oct 2026): a come bet's first roll is its own come-out — a 7
+        // there is a natural WIN for the come (and a loss for don't come),
+        // not a 7-out loss. Resolve traveling bets first; the loops below
+        // then only touch established bets (resolved ones are already dropped).
+        this.getBets('come').filter(b=>b.meta.traveling).forEach(b=>this._winEven(b,'WIN come (natural 7)'));
+        this.getBets('dontcome').filter(b=>b.meta.traveling).forEach(b=>this._lose(b,"LOSE don't come (natural 7)"));
         // line bets
         this.getBets('pass').forEach(b=>{this._lose(b,'LOSE pass (7-out)'); this._dropOddsOf(b.id);});
         this.getBets('dontpass').forEach(b=>this._winEven(b,'WIN don\'t pass (7-out)'));
